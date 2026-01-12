@@ -53,3 +53,7 @@ Thumbs.db
 
 # MaiBot specific
 config_local.toml
+
+# Poster cache
+posters/cache.json
+!posters/.gitkeep
