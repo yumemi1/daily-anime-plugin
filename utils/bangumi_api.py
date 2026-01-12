@@ -87,13 +87,22 @@ class BangumiAPIClient:
         Returns:
             搜索结果列表
         """
-        params = {"keyword": keyword, "limit": limit}
+        # 类型映射：字符串到整数
+        type_mapping = {"book": 1, "anime": 2, "music": 3, "game": 4, "real": 6}
+
+        # 构建请求体
+        json_data: Dict[str, Any] = {"keyword": keyword}
+
+        # 添加类型过滤器
         if type_filter:
-            params["type"] = type_filter
+            type_int = type_mapping.get(type_filter.lower())
+            if type_int:
+                json_data["filter"] = {"type": [type_int]}
 
         try:
-            data = await self._request("GET", "/search/subject/{}".format(keyword), params=params)
-            return data.get("list", []) if isinstance(data, dict) else []
+            # 使用 POST 请求调用新的搜索 API
+            data = await self._request("POST", "/v0/search/subjects", params={"limit": limit}, json=json_data)
+            return data.get("data", []) if isinstance(data, dict) else []
         except Exception as e:
             print(f"搜索条目失败: {str(e)}")
             return []
@@ -148,7 +157,7 @@ class BangumiAPIClient:
         Returns:
             收藏列表
         """
-        params = {"subject_type": subject_type}
+        params: Dict[str, Any] = {"subject_type": subject_type}
         if collection_type:
             params["type"] = collection_type  # type: ignore
 
