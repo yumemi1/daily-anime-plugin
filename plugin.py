@@ -25,7 +25,13 @@ from src.plugin_system import (
 from src.plugin_system.base.component_types import PythonDependency
 from src.common.logger import get_logger
 
-from .utils.bangumi_api import BangumiDataFormatter, get_daily_anime_info, search_anime_info, get_anime_detail
+from .utils.bangumi_api import (
+    BangumiDataFormatter,
+    get_today_anime_info,
+    get_daily_anime_info,
+    search_anime_info,
+    get_anime_detail,
+)
 from .utils.cache_manager import cached_get_calendar, cached_search_subject, cached_get_subject_detail
 from .utils.scheduler import (
     get_global_scheduler,
@@ -146,7 +152,7 @@ class AnimeTodayCommand(BaseCommand):
         """执行查询今日新番"""
         try:
             # 获取今日新番信息
-            info = await get_daily_anime_info()
+            info = await get_today_anime_info()
 
             # 发送消息
             await self.send_text(info)
@@ -269,7 +275,7 @@ class AnimeInfoAction(BaseAction):
 
             if any(keyword in question_lower for keyword in ["今天", "今日", "daily"]):
                 # 获取今日新番
-                info = await get_daily_anime_info()
+                info = await get_today_anime_info()
                 await self.send_text(info)
                 return True, "响应了今日新番询问"
 
@@ -311,8 +317,8 @@ class AnimeInfoAction(BaseAction):
                     return True, "请求搜索关键词"
 
             else:
-                # 通用新番信息响应
-                info = await get_daily_anime_info()
+                # 通用新番信息响应（今天的新番）
+                info = await get_today_anime_info()
                 await self.send_text(f"关于新番信息，我为您整理了以下内容：\n\n{info}")
                 return True, "响应了通用新番询问"
 
@@ -358,7 +364,7 @@ class DailyPushEventHandler(BaseEventHandler):
                 """每日新番推送函数"""
                 try:
                     # 获取今日新番信息
-                    info = await get_daily_anime_info()
+                    info = await get_today_anime_info()
 
                     # 添加推送标题
                     push_message = f"🎌 每日新番推送 {push_time}\n\n{info}"

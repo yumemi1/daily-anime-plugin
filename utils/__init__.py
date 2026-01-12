@@ -2,7 +2,13 @@
 Daily Anime Plugin Utils Module
 """
 
-from .bangumi_api import BangumiDataFormatter, get_daily_anime_info, search_anime_info, get_anime_detail
+from .bangumi_api import (
+    BangumiDataFormatter,
+    get_today_anime_info,
+    get_daily_anime_info,
+    search_anime_info,
+    get_anime_detail,
+)
 from .cache_manager import cached_get_calendar, cached_search_subject, cached_get_subject_detail
 from .scheduler import (
     get_global_scheduler,
@@ -14,6 +20,7 @@ from .scheduler import (
 
 __all__ = [
     "BangumiDataFormatter",
+    "get_today_anime_info",
     "get_daily_anime_info",
     "search_anime_info",
     "get_anime_detail",

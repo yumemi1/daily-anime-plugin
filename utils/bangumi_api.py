@@ -173,6 +173,43 @@ class BangumiDataFormatter:
     """Bangumi数据格式化器"""
 
     @staticmethod
+    def format_today_anime_info(calendar_data: List[Dict[str, Any]]) -> str:
+        """只格式化今天的新番信息"""
+        if not calendar_data:
+            return "暂无放送日程信息"
+
+        # 获取今天是周几 (0=周日, 1=周一...)
+        today = datetime.now().weekday()
+        weekday_names = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
+        today_name = f"🌟 {weekday_names[today]}"
+
+        # 在 calendar_data 中找到今天的数据
+        for day_info in calendar_data:
+            if day_info.get("weekday", {}).get("id") == today:
+                items = day_info.get("items", [])
+
+                if not items:
+                    return f"【{today_name}】今天没有新番更新"
+
+                result = []
+                result.append(f"【{today_name}】今天的新番更新")
+
+                for item in items:  # 显示今天的所有番剧
+                    name = item.get("name", "未知番剧")
+                    name_cn = item.get("name_cn", "")
+                    display_name = name_cn if name_cn else name
+
+                    air_time = item.get("air_time", "")
+                    if air_time:
+                        result.append(f"  🕐 {air_time} {display_name}")
+                    else:
+                        result.append(f"  📺 {display_name}")
+
+                return "\n".join(result)
+
+        return f"【{today_name}】今天没有新番更新"
+
+    @staticmethod
     def format_calendar_info(calendar_data: List[Dict[str, Any]]) -> str:
         """格式化每日放送日程信息"""
         if not calendar_data:
@@ -182,7 +219,7 @@ class BangumiDataFormatter:
         today = datetime.now().weekday()
 
         result = []
-        result.append("📺 每日放送日程\n")
+        result.append("📺 本周放送日程\n")
 
         for day_info in calendar_data:
             weekday = day_info.get("weekday", {}).get("id", 0)
@@ -291,8 +328,15 @@ class BangumiDataFormatter:
 
 
 # 便捷函数
+async def get_today_anime_info() -> str:
+    """获取今天新番信息的便捷函数"""
+    async with BangumiAPIClient() as client:
+        calendar_data = await client.get_calendar()
+        return BangumiDataFormatter.format_today_anime_info(calendar_data)
+
+
 async def get_daily_anime_info() -> str:
-    """获取每日新番信息的便捷函数"""
+    """获取本周新番信息的便捷函数"""
     async with BangumiAPIClient() as client:
         calendar_data = await client.get_calendar()
         return BangumiDataFormatter.format_calendar_info(calendar_data)
