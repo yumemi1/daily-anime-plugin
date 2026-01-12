@@ -1,0 +1,90 @@
+{
+  "manifest_version": 1,
+  "name": "每日新番资讯插件 (Daily Anime Plugin)",
+  "version": "1.0.0",
+  "description": "基于Bangumi API的每日新番资讯插件，提供新番查询、智能推荐和定时推送功能",
+  "author": {
+    "name": "yumemi1",
+    "url": "https://github.com/yumemi1"
+  },
+  "license": "GPL-v3.0-or-later",
+  "host_application": {
+    "min_version": "0.8.0"
+  },
+  "homepage_url": "https://github.com/yumemi1/daily-anime-plugin",
+  "repository_url": "https://github.com/yumemi1/daily-anime-plugin",
+  "keywords": [
+    "anime",
+    "bangumi",
+    "新番",
+    "每日资讯",
+    "追番",
+    "动漫"
+  ],
+  "categories": [
+    "Entertainment",
+    "Information",
+    "API"
+  ],
+  "default_locale": "zh-CN",
+  "locales_path": "_locales",
+  "plugin_info": {
+    "is_built_in": false,
+    "plugin_type": "information",
+    "components": [
+      {
+        "type": "command",
+        "name": "anime_today",
+        "description": "查询今日新番更新",
+        "pattern": "/anime_today"
+      },
+      {
+        "type": "command",
+        "name": "anime_week",
+        "description": "查询本周新番更新",
+        "pattern": "/anime_week"
+      },
+      {
+        "type": "command",
+        "name": "anime_search",
+        "description": "搜索特定番剧信息",
+        "pattern": "/anime_search <关键词>"
+      },
+      {
+        "type": "tool",
+        "name": "get_daily_anime",
+        "description": "获取每日新番数据工具"
+      },
+      {
+        "type": "tool",
+        "name": "search_anime",
+        "description": "搜索番剧信息工具"
+      },
+      {
+        "type": "action",
+        "name": "anime_info_response",
+        "description": "智能响应新番相关询问"
+      }
+    ],
+    "features": [
+      "Bangumi API集成",
+      "每日新番查询",
+      "本周新番汇总",
+      "番剧搜索功能",
+      "智能对话响应",
+      "缓存优化机制",
+      "定时推送功能",
+      "多平台消息格式适配"
+    ],
+    "dependencies": {
+      "external_apis": [
+        "Bangumi API (https://api.bgm.tv)"
+      ],
+      "python_packages": [
+        "aiohttp",
+        "pydantic"
+      ]
+    }
+  },
+  "id": "yumemi1.daily_anime_plugin"
+}

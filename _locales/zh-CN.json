@@ -1,0 +1,45 @@
+{
+  "plugin.name": "每日新番资讯插件",
+  "plugin.description": "基于Bangumi API的每日新番资讯插件",
+  
+  "commands.anime_today.description": "查询今日新番更新信息",
+  "commands.anime_week.description": "查询本周新番更新汇总",
+  "commands.anime_search.description": "搜索特定番剧信息",
+  
+  "tools.get_daily_anime.description": "获取每日新番更新信息",
+  "tools.search_anime.description": "根据关键词搜索番剧信息",
+  "tools.get_anime_detail.description": "根据番剧ID获取详细信息",
+  
+  "actions.anime_info_response.description": "智能响应用户的新番相关询问",
+  
+  "messages.no_results": "未找到相关结果",
+  "messages.api_error": "API请求失败，请稍后重试",
+  "messages.network_error": "网络错误，请检查网络连接",
+  "messages.cache_error": "缓存错误，请稍后重试",
+  "messages.invalid_keyword": "请提供有效的搜索关键词",
+  "messages.invalid_id": "请提供有效的番剧ID",
+  
+  "ui.loading": "正在获取数据...",
+  "ui.no_data": "暂无数据",
+  "ui.error_occurred": "发生错误",
+  "ui.retry_later": "请稍后重试",
+  
+  "format.today_anime": "📺 今日新番更新",
+  "format.week_anime": "📺 本周新番汇总",
+  "format.search_results": "🔍 搜索结果",
+  "format.anime_detail": "📺 番剧详情",
+  
+  "weekday.0": "周日",
+  "weekday.1": "周一",
+  "weekday.2": "周二",
+  "weekday.3": "周三",
+  "weekday.4": "周四",
+  "weekday.5": "周五",
+  "weekday.6": "周六",
+  "weekday.today": "今天",
+  
+  "rating.no_score": "暂无评分",
+  "episodes.unknown": "未知",
+  "date.unknown": "未知",
+  "type.unknown": "未知"
+}
