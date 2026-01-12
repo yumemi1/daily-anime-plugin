@@ -44,11 +44,23 @@
         "description": "查询本周新番更新",
         "pattern": "/anime_week"
       },
-      {
+{
         "type": "command",
         "name": "anime_search",
         "description": "搜索特定番剧信息",
         "pattern": "/anime_search <关键词>"
+      },
+      {
+        "type": "command",
+        "name": "anime_poster",
+        "description": "获取今日新番海报",
+        "pattern": "/anime_poster"
+      },
+      {
+        "type": "command",
+        "name": "weekly_poster",
+        "description": "获取本周汇总海报",
+        "pattern": "/weekly_poster"
       },
       {
         "type": "tool",
@@ -59,6 +71,11 @@
         "type": "tool",
         "name": "search_anime",
         "description": "搜索番剧信息工具"
+      },
+      {
+        "type": "tool",
+        "name": "generate_anime_poster",
+        "description": "生成新番海报工具"
       },
       {
         "type": "action",

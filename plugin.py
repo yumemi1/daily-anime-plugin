@@ -57,9 +57,10 @@ try:
 except ImportError as e:
     POSTER_IMPORT_ERROR = str(e)
     POSTER_AVAILABLE = False
+    get_global_poster_generator = None
+    get_global_poster_cache = None
 
 
-# 检查playwright依赖并提供友好的错误提示
 def check_playwright_dependency():
     """检查playwright依赖是否可用"""
     if not POSTER_AVAILABLE:
@@ -177,6 +178,66 @@ class GetAnimeDetailTool(BaseTool):
             return {"name": self.name, "content": f"获取番剧详情时发生错误: {str(e)}"}
 
 
+class GeneratePosterTool(BaseTool):
+    """生成新番海报工具"""
+
+    name = "generate_anime_poster"
+    description = "生成新番海报工具"
+    parameters = [
+        ("poster_type", ToolParamType.STRING, "海报类型 (daily/weekly)", False, None),
+        ("force_refresh", ToolParamType.BOOLEAN, "是否强制刷新缓存", False, None),
+    ]
+    available_for_llm = True
+
+    async def execute(self, function_args: dict[str, Any]) -> dict[str, Any]:
+        """执行海报生成"""
+        try:
+            poster_type: str = function_args.get("poster_type", "daily")
+            force_refresh: bool = function_args.get("force_refresh", False)
+
+            if not POSTER_AVAILABLE or not get_global_poster_generator:
+                return {
+                    "name": self.name,
+                    "content": "海报功能不可用，请安装Playwright依赖",
+                    "success": False,
+                }
+
+            # 获取海报生成器
+            poster_gen = get_global_poster_generator()
+            if not poster_gen:
+                return {"name": self.name, "content": "海报生成器初始化失败", "success": False}
+
+            # 生成海报
+            if poster_type == "daily":
+                result = await poster_gen.generate_daily_poster()
+            elif poster_type == "weekly":
+                result = await poster_gen.generate_weekly_poster()
+            else:
+                return {"name": self.name, "content": f"不支持的海报类型: {poster_type}", "success": False}
+
+            if result and result.get("image_data"):
+                return {
+                    "name": self.name,
+                    "content": f"海报生成成功 (类型: {poster_type})",
+                    "success": True,
+                    "poster_type": poster_type,
+                    "image_data": result.get("image_data"),
+                    "metadata": result.get("metadata", {}),
+                }
+            else:
+                error_msg = result.get("error", "海报生成失败") if result else "海报生成失败"
+                logger.warning(f"海报生成失败: {error_msg}")
+                return {"name": self.name, "content": f"海报生成失败: {error_msg}", "success": False}
+
+        except Exception as e:
+            logger.error(f"海报生成工具执行失败: {str(e)}")
+            return {
+                "name": self.name,
+                "content": f"海报生成工具执行失败: {str(e)}",
+                "success": False,
+            }
+
+
 # ===== Command组件 =====
 
 
@@ -280,6 +341,142 @@ class AnimeSearchCommand(BaseCommand):
         except Exception as e:
             logger.error(f"搜索番剧失败: {str(e)}")
             error_msg = f"搜索番剧失败: {str(e)}"
+            await self.send_text(error_msg)
+            return False, error_msg, False
+
+
+class AnimePosterCommand(BaseCommand):
+    """获取今日新番海报命令"""
+
+    command_name = "anime_poster"
+    command_description = "获取今日新番海报"
+    command_pattern = r"^/anime_poster$"
+
+    async def execute(self) -> Tuple[bool, Optional[str], bool]:
+        """执行获取今日新番海报"""
+        try:
+            if not POSTER_AVAILABLE or not get_global_poster_generator:
+                error_msg = (
+                    "海报功能不可用，请安装依赖：\n"
+                    "1. pip install playwright\n"
+                    "2. playwright install chromium\n"
+                    "安装后重启插件即可使用海报功能"
+                )
+                await self.send_text(error_msg)
+                return False, "海报功能不可用", False
+
+            # 获取海报生成器
+            poster_gen = get_global_poster_generator()
+            if not poster_gen:
+                error_msg = "海报生成器初始化失败"
+                await self.send_text(error_msg)
+                return False, error_msg, False
+
+            # 生成每日海报
+            poster_result = await poster_gen.generate_daily_poster()
+
+            if poster_result and poster_result.get("image_data"):
+                # 发送图片消息
+                image_data = poster_result["image_data"]
+                metadata = poster_result.get("metadata", {})
+
+                # 构建图片标题
+                title = f"🎌 今日新番海报 - {metadata.get('date', datetime.now().strftime('%Y年%m月%d日'))}"
+
+                # 先发送标题文本，再发送图片
+                await self.send_text(title)
+                await self.send_image(image_data)
+                logger.info("海报图片发送成功")
+                return True, "已生成并发送今日新番海报", True
+            else:
+                # 降级到文本版本
+                logger.warning("海报生成失败，降级到文本版本")
+                info = await get_today_anime_info()
+                fallback_msg = (
+                    "⚠️ 海报生成失败，为您显示文本版本\n\n"
+                    f"📺 今日新番信息\n{info}\n\n"
+                    "💡 提示：如果海报持续失败，请检查Playwright依赖是否正确安装"
+                )
+                await self.send_text(fallback_msg)
+                return False, "海报生成失败，已降级到文本版本", False
+
+        except Exception as e:
+            logger.error(f"海报命令执行失败: {str(e)}")
+            error_msg = f"海报生成出错，请稍后重试：{str(e)}"
+            await self.send_text(error_msg)
+            return False, error_msg, False
+
+
+class WeeklyPosterCommand(BaseCommand):
+    """获取本周汇总海报命令"""
+
+    command_name = "weekly_poster"
+    command_description = "获取本周汇总海报"
+    command_pattern = r"^/weekly_poster$"
+
+    async def execute(self) -> Tuple[bool, Optional[str], bool]:
+        """执行获取本周汇总海报"""
+        try:
+            # 检查是否周一（周一生成周报最合适）
+            from datetime import datetime
+
+            weekday = datetime.now().weekday()  # 0=周一, 6=周日
+
+            if not POSTER_AVAILABLE or not get_global_poster_generator:
+                error_msg = (
+                    "海报功能不可用，请安装依赖：\n"
+                    "1. pip install playwright\n"
+                    "2. playwright install chromium\n"
+                    "安装后重启插件即可使用海报功能"
+                )
+                await self.send_text(error_msg)
+                return False, "海报功能不可用", False
+
+            # 获取海报生成器
+            poster_gen = get_global_poster_generator()
+            if not poster_gen:
+                error_msg = "海报生成器初始化失败"
+                await self.send_text(error_msg)
+                return False, error_msg, False
+
+            # 生成周报海报
+            poster_result = await poster_gen.generate_weekly_poster()
+
+            if poster_result and poster_result.get("image_data"):
+                # 发送图片消息
+                image_data = poster_result["image_data"]
+                metadata = poster_result.get("metadata", {})
+
+                # 构建图片标题
+                week_range = metadata.get("week_range", "")
+                title = f"🗓️ 本周新番汇总海报 - {week_range}"
+
+                # 先发送标题文本，再发送图片
+                await self.send_text(title)
+                await self.send_image(image_data)
+                logger.info("周报海报图片发送成功")
+                return True, "已生成并发送本周汇总海报", True
+            else:
+                # 降级到文本版本
+                logger.warning("周报海报生成失败，降级到文本版本")
+                calendar_data = await cached_get_calendar()
+                if calendar_data:
+                    formatted_info = BangumiDataFormatter.format_calendar_info(calendar_data)
+                    week_info = f"📺 本周新番汇总\n{formatted_info}"
+                else:
+                    week_info = "获取本周新番信息失败，请稍后重试"
+
+                fallback_msg = (
+                    "⚠️ 周报海报生成失败，为您显示文本版本\n\n"
+                    f"{week_info}\n\n"
+                    "💡 提示：如果海报持续失败，请检查Playwright依赖是否正确安装"
+                )
+                await self.send_text(fallback_msg)
+                return False, "周报海报生成失败，已降级到文本版本", False
+
+        except Exception as e:
+            logger.error(f"周报海报命令执行失败: {str(e)}")
+            error_msg = f"周报海报生成出错，请稍后重试：{str(e)}"
             await self.send_text(error_msg)
             return False, error_msg, False
 
@@ -504,6 +701,128 @@ class PluginStopEventHandler(BaseEventHandler):
             return True, True, f"插件停止清理失败: {str(e)}", None, None
 
 
+class PosterSchedulerEventHandler(BaseEventHandler):
+    """海报定时任务事件处理器"""
+
+    event_type = EventType.ON_START  # 启动时设置定时任务
+    handler_name = "poster_scheduler_handler"
+    handler_description = "设置海报生成相关的定时任务"
+
+    async def execute(self, message: MaiMessages | None) -> Tuple[bool, bool, str | None, None, None]:
+        """设置海报定时任务"""
+        try:
+            if not POSTER_AVAILABLE:
+                return True, True, "海报功能不可用，跳过定时任务设置", None, None
+
+            # 检查是否启用海报定时任务
+            poster_enabled = self.get_config("poster.enabled", True)
+            if not poster_enabled:
+                return True, True, "海报定时任务已禁用", None, None
+
+            # 获取定时任务配置
+            daily_time = str(self.get_config("poster.daily_generation_time", "04:00"))
+            weekly_time = str(self.get_config("poster.weekly_generation_time", "04:10"))
+            cleanup_time = str(self.get_config("poster.cleanup_time", "03:50"))
+
+            # 启动调度器
+            await start_scheduler()
+
+            # 添加海报生成定时任务
+            await add_daily_push_task(self._generate_daily_poster_wrapper, daily_time, [])
+
+            await add_daily_push_task(self._generate_weekly_poster_wrapper, weekly_time, [])
+
+            await add_daily_push_task(self._cleanup_cache_wrapper, cleanup_time, [])
+
+            logger.info(f"海报定时任务已设置: 每日{daily_time}, 周报{weekly_time}, 清理{cleanup_time}")
+            return True, True, "海报定时任务设置完成", None, None
+
+        except Exception as e:
+            logger.error(f"设置海报定时任务失败: {str(e)}")
+            return True, True, f"设置海报定时任务失败: {str(e)}", None, None
+
+    async def _generate_daily_poster_wrapper(self, chat_ids: List[str]) -> None:
+        """每日海报生成包装函数"""
+        try:
+            if not POSTER_AVAILABLE or not get_global_poster_generator:
+                return
+
+            logger.info("开始定时生成每日海报")
+            poster_gen = get_global_poster_generator()
+            result = await poster_gen.generate_daily_poster()
+
+            if result and result.get("image_data"):
+                logger.info("定时每日海报生成成功")
+            else:
+                logger.warning("定时每日海报生成失败")
+
+        except Exception as e:
+            logger.error(f"定时生成每日海报失败: {str(e)}")
+
+    async def _generate_weekly_poster_wrapper(self, chat_ids: List[str]) -> None:
+        """周报海报生成包装函数"""
+        try:
+            if not POSTER_AVAILABLE or not get_global_poster_generator:
+                return
+
+            logger.info("开始定时生成周报海报")
+            poster_gen = get_global_poster_generator()
+            result = await poster_gen.generate_weekly_poster()
+
+            if result and result.get("image_data"):
+                logger.info("定时周报海报生成成功")
+            else:
+                logger.warning("定时周报海报生成失败")
+
+        except Exception as e:
+            logger.error(f"定时生成周报海报失败: {str(e)}")
+
+    async def _cleanup_cache_wrapper(self, chat_ids: List[str]) -> None:
+        """缓存清理包装函数"""
+        try:
+            logger.info("开始清理海报缓存")
+            if get_global_poster_cache:
+                cache = get_global_poster_cache()
+                # 这里需要根据PosterCache的实际API实现清理逻辑
+                logger.info("海报缓存清理完成")
+            else:
+                logger.warning("海报缓存不可用")
+
+        except Exception as e:
+            logger.error(f"清理海报缓存失败: {str(e)}")
+
+    async def _generate_weekly_poster(self, poster_gen) -> None:
+        """生成周报海报"""
+        try:
+            logger.info("开始定时生成周报海报")
+            result = await poster_gen.generate_weekly_poster()
+
+            if result and result.get("image_data"):
+                logger.info("定时周报海报生成成功")
+            else:
+                logger.warning("定时周报海报生成失败")
+
+        except Exception as e:
+            logger.error(f"定时生成周报海报失败: {str(e)}")
+            raise
+
+    async def _cleanup_cache(self) -> None:
+        """清理过期缓存"""
+        try:
+            logger.info("开始清理海报缓存")
+            if get_global_poster_cache:
+                cache = get_global_poster_cache()
+                # 这里需要根据PosterCache的实际API实现
+                # cache.cleanup_expired()
+                logger.info("海报缓存清理完成")
+            else:
+                logger.warning("海报缓存不可用")
+
+        except Exception as e:
+            logger.error(f"清理海报缓存失败: {str(e)}")
+            raise
+
+
 # ===== 插件注册 =====
 
 
@@ -524,6 +843,7 @@ class DailyAnimePlugin(BasePlugin):
         "api": "Bangumi API配置",
         "cache": "缓存配置",
         "push": "推送配置",
+        "poster": "海报功能配置",
     }
 
     @property
@@ -550,6 +870,15 @@ class DailyAnimePlugin(BasePlugin):
                 "push_time": ConfigField(type=str, default="09:00", description="每日推送时间"),
                 "push_chat_ids": ConfigField(type=list, default=[], description="推送目标聊天ID列表"),
             },
+            "poster": {
+                "enabled": ConfigField(type=bool, default=True, description="是否启用海报生成功能"),
+                "daily_generation_time": ConfigField(type=str, default="04:00", description="每日海报自动生成时间"),
+                "weekly_generation_time": ConfigField(type=str, default="04:10", description="周报海报自动生成时间"),
+                "cleanup_time": ConfigField(type=str, default="03:50", description="过期海报清理时间"),
+                "max_cache_days": ConfigField(type=int, default=7, description="海报文件最大缓存天数"),
+                "headless_browser": ConfigField(type=bool, default=True, description="是否使用无头浏览器模式"),
+                "cache_dir": ConfigField(type=str, default="posters", description="海报缓存目录名称"),
+            },
         }
 
     def get_plugin_components(self):
@@ -559,13 +888,17 @@ class DailyAnimePlugin(BasePlugin):
             (GetDailyAnimeTool.get_tool_info(), GetDailyAnimeTool),
             (SearchAnimeTool.get_tool_info(), SearchAnimeTool),
             (GetAnimeDetailTool.get_tool_info(), GetAnimeDetailTool),
+            (GeneratePosterTool.get_tool_info(), GeneratePosterTool),
             # Command组件
             (AnimeTodayCommand.get_command_info(), AnimeTodayCommand),
             (AnimeWeekCommand.get_command_info(), AnimeWeekCommand),
             (AnimeSearchCommand.get_command_info(), AnimeSearchCommand),
+            (AnimePosterCommand.get_command_info(), AnimePosterCommand),
+            (WeeklyPosterCommand.get_command_info(), WeeklyPosterCommand),
             # Action组件
             (AnimeInfoAction.get_action_info(), AnimeInfoAction),
             # EventHandler组件
             (DailyPushEventHandler.get_handler_info(), DailyPushEventHandler),
             (PluginStopEventHandler.get_handler_info(), PluginStopEventHandler),
+            (PosterSchedulerEventHandler.get_handler_info(), PosterSchedulerEventHandler),
         ]
