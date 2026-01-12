@@ -215,14 +215,14 @@ class GeneratePosterTool(BaseTool):
             else:
                 return {"name": self.name, "content": f"不支持的海报类型: {poster_type}", "success": False}
 
-            if result and result.get("image_data"):
+            if result and (result.get("image_data") or result.get("base64")):
                 return {
                     "name": self.name,
                     "content": f"海报生成成功 (类型: {poster_type})",
                     "success": True,
                     "poster_type": poster_type,
-                    "image_data": result.get("image_data"),
-                    "metadata": result.get("metadata", {}),
+                    "image_data": result.get("image_data") or result.get("base64"),
+                    "metadata": result,
                 }
             else:
                 error_msg = result.get("error", "海报生成失败") if result else "海报生成失败"
@@ -375,13 +375,15 @@ class AnimePosterCommand(BaseCommand):
             # 生成每日海报
             poster_result = await poster_gen.generate_daily_poster()
 
-            if poster_result and poster_result.get("image_data"):
+            if poster_result and (poster_result.get("image_data") or poster_result.get("base64")):
                 # 发送图片消息
-                image_data = poster_result["image_data"]
-                metadata = poster_result.get("metadata", {})
+                image_data = poster_result.get("image_data") or poster_result.get("base64")
+                if not image_data:
+                    logger.error("海报数据为空")
+                    return False, "海报数据为空", False
 
                 # 构建图片标题
-                title = f"🎌 今日新番海报 - {metadata.get('date', datetime.now().strftime('%Y年%m月%d日'))}"
+                title = f"🎌 今日新番海报 - {poster_result.get('date', datetime.now().strftime('%Y年%m月%d日'))}"
 
                 # 先发送标题文本，再发送图片
                 await self.send_text(title)
@@ -442,13 +444,15 @@ class WeeklyPosterCommand(BaseCommand):
             # 生成周报海报
             poster_result = await poster_gen.generate_weekly_poster()
 
-            if poster_result and poster_result.get("image_data"):
+            if poster_result and (poster_result.get("image_data") or poster_result.get("base64")):
                 # 发送图片消息
-                image_data = poster_result["image_data"]
-                metadata = poster_result.get("metadata", {})
+                image_data = poster_result.get("image_data") or poster_result.get("base64")
+                if not image_data:
+                    logger.error("周报海报数据为空")
+                    return False, "周报海报数据为空", False
 
                 # 构建图片标题
-                week_range = metadata.get("week_range", "")
+                week_range = poster_result.get("week_range", "")
                 title = f"🗓️ 本周新番汇总海报 - {week_range}"
 
                 # 先发送标题文本，再发送图片
