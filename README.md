@@ -5,11 +5,12 @@
 ## 功能特性
 
 - **每日新番更新提醒** - 实时获取当天放送日程
-- **精美海报生成** - 自动生成新番资讯海报（支持 Playwright）
-- **智能番剧搜索** - 支持关键词、标签、评分等多维度搜索  
+- **精美海报生成** - 自动生成现代化新番资讯海报（支持 Playwright）
+- **智能番剧搜索** - 支持关键词、标签、评分等多维度搜索
 - **详细番剧信息** - 提供评分、简介、集数等完整数据
+- **剧集进度追踪** - 显示最新更新集数和总集数信息
 - **自然语言交互** - 支持智能对话式查询
-- **高性能缓存** - 多层缓存机制，快速响应
+- **高性能缓存** - 多层缓存机制，剧集信息独立缓存
 - **定时推送** - 自定义时间推送新番更新和海报
 
 ## 快速开始
@@ -17,11 +18,13 @@
 ### 安装依赖
 
 **基础依赖：**
+
 ```bash
 pip install aiohttp pydantic
 ```
 
 **海报功能依赖（可选）：**
+
 ```bash
 pip install playwright
 playwright install chromium
@@ -32,27 +35,31 @@ playwright install chromium
 1. 将插件放置到 MaiBot 的 `plugins/` 目录
 2. 插件首次运行时会自动生成 `config.toml` 配置文件
 3. 在配置中启用插件：
+
 ```toml
 [plugin]
 enabled = true
 ```
 
-## 📱 使用方式
+## 使用方式
 
 ### 命令式交互
+
 - `/anime_today` - 查询今日新番
-- `/anime_week` - 查询本周新番汇总  
+- `/anime_week` - 查询本周新番汇总
 - `/anime_search <关键词>` - 搜索特定番剧
 - `/anime_poster` - 获取今日新番海报
 - `/weekly_poster` - 获取本周汇总海报
 
 ### 智能对话
+
 - "今天有什么新番更新吗？"
 - "本周有什么好看的动漫？"
 - "帮我搜索一下鬼灭之刃"
 - "生成一张新番海报"
 
 ### LLM工具集成
+
 ```python
 # 可用的工具函数
 generate_anime_poster(poster_type="daily", force_refresh=False)
@@ -83,6 +90,7 @@ get_anime_detail(subject_id=12345)
 - **calendar_ttl** (integer, 可选): 每日放送日程数据的缓存时间，单位为秒，默认 1800 秒
 - **search_ttl** (integer, 可选): 搜索结果缓存时间，单位为秒，默认 3600 秒（1小时）
 - **detail_ttl** (integer, 可选): 番剧详细信息缓存时间，单位为秒，默认 3600 秒（1小时）
+- **episodes_ttl** (integer, 可选): 剧集信息缓存时间，单位为秒，默认 7200 秒（2小时）
 
 ### [push] 定时推送配置
 
@@ -101,25 +109,32 @@ get_anime_detail(subject_id=12345)
 - **cache_dir** (string, 可选): 海报缓存目录名称，相对于插件目录，默认 "posters"
 
 **注意事项：**
+
 - 配置文件修改后需要重启 MaiBot 才能生效
 - 推送功能的 chat_id 需要根据具体的聊天平台获取正确值
 - 海报功能需要额外安装 Playwright 依赖
 - 缓存时间设置过长可能导致数据不及时，设置过短可能增加API调用频率
+- 新增剧集信息缓存，默认2小时，减少API调用频率并提高响应速度
 
 ## 海报功能详解
 
 ### 自动生成时间
+
 - **04:00** - 每日新番海报自动生成
 - **04:10** - 本周汇总海报（仅周一）
 - **03:50** - 自动清理过期海报缓存
 
 ### 海报特点
-- **简约设计** - 深色主题，专业质感
-- **移动端优化** - 720x960px，适合分享
-- **智能排序** - 按评分高低展示番剧
+
+- **现代设计** - 紫蓝渐变背景，玻璃态卡片效果
+- **剧集信息** - 显示最新集数、总集数和更新进度
+- **网格布局** - 响应式设计，所有番剧展示封面图
+- **动画效果** - 悬浮交互动画，提升视觉体验
+- **高分辨率** - 1200x1600px，高清显示
+- **智能排序** - 按评分高低展示番剧，主番剧突出显示
 - **预生成机制** - 定时生成，秒级响应
-- **多层缓存** - 内存+磁盘双重缓存
-- **优雅降级** - 海报不可用时自动发送文本版本
+- **多层缓存** - 内存+磁盘双重缓存，剧集信息独立缓存2小时
+- **优雅降级** - 海报不可用时自动发送文本版本，图片加载失败显示占位符
 
 ## 技术栈
 
@@ -127,8 +142,9 @@ get_anime_detail(subject_id=12345)
 - **网络**: aiohttp for HTTP requests
 - **数据**: pydantic for data validation
 - **渲染**: Playwright + Chromium (海报功能)
-- **缓存**: 内存缓存 + 文件系统
-- **API**: Bangumi API (https://api.bgm.tv)
+- **样式**: 现代CSS3特性 (backdrop-filter, grid, animations)
+- **缓存**: 内存缓存 + 文件系统，剧集信息独立缓存
+- **API**: Bangumi API (https://api.bgm.tv) - 支持剧集数据获取
 
 ## 项目结构
 
@@ -146,9 +162,9 @@ plugins/daily-anime-plugin/
 │   ├── generator.py       # 海报生成器
 │   ├── cache.py          # 海报缓存管理
 │   └── templates/        # HTML模板
-│       ├── daily.html     # 每日海报模板
+│       ├── daily.html     # 每日海报模板（现代化设计）
 │       ├── weekly.html    # 周报海报模板
-│       └── minimal-styles.css  # 通用样式
+│       └── minimal-styles.css  # 现代化CSS样式（渐变+玻璃态）
 └── posters/              # 海报存储目录
     ├── daily/            # 每日海报
     └── weekly/           # 周报海报
@@ -157,6 +173,7 @@ plugins/daily-anime-plugin/
 ## 故障排除
 
 ### 海报功能不可用
+
 ```bash
 # 检查Playwright是否安装
 pip show playwright
@@ -167,6 +184,7 @@ playwright install chromium
 ```
 
 ### 插件启动失败
+
 ```bash
 # 检查依赖
 pip install aiohttp pydantic
@@ -176,6 +194,7 @@ pip install aiohttp pydantic
 ```
 
 ### 配置问题
+
 - 插件首次运行会自动生成配置文件
 - 如需重置，删除 `config.toml` 并重启插件
 - 确保配置文件与 `plugin.py` 同级目录
@@ -187,9 +206,3 @@ pip install aiohttp pydantic
 - **Python要求**: 3.8+
 - **MaiBot最低版本**: 0.8.0
 - **API**: Bangumi v0
-
----
-
-Made with ❤️ by [yumemi1](https://github.com/yumemi1)
-
-**海报功能说明**: 海报生成功能需要额外安装 Playwright 依赖，请参考安装说明。

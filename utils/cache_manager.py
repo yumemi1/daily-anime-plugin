@@ -331,3 +331,29 @@ async def cached_get_subject_detail(subject_id: int, cache_ttl: int = 3600) -> O
     except Exception as e:
         logger.error(f"获取条目详情失败: {str(e)}")
         return None
+
+
+async def cached_get_subject_episodes(
+    subject_id: int, episode_type: Optional[int] = None, cache_ttl: int = 7200
+) -> Optional[List[Dict[str, Any]]]:
+    """缓存获取条目剧集列表"""
+    cache = get_global_cache()
+    cache_key = CacheKeyBuilder.subject_episodes_key(subject_id, episode_type)
+
+    # 尝试从缓存获取
+    cached_data = await cache.get(cache_key)
+    if cached_data is not None:
+        return cached_data
+
+    # 缓存未命中，从API获取
+    try:
+        from .bangumi_api import BangumiAPIClient
+
+        async with BangumiAPIClient() as client:
+            data = await client.get_subject_episodes(subject_id, episode_type)
+            if data:
+                await cache.set(cache_key, data, cache_ttl)
+            return data
+    except Exception as e:
+        logger.error(f"获取条目剧集失败: {str(e)}")
+        return None

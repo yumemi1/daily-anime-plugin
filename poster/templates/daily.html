@@ -7,38 +7,52 @@
     <link rel="stylesheet" href="minimal-styles.css">
 </head>
 <body class="poster">
-    <header class="poster-header">
-        <div class="date">{{date}}</div>
-        <h1>今日新番资讯</h1>
-    </header>
-    
     <main class="poster-body">
-        <!-- 主番剧卡片 -->
+        <!-- 头部装饰区域 -->
+        <section class="hero-section">
+            <div class="date-badge">{{date}}</div>
+            <h1 class="main-title">🎬 今日新番更新</h1>
+        </section>
+        
+        <!-- 主番剧横向卡片 -->
         {{#if main_anime}}
-        <section class="main-anime">
-            <img class="cover" src="{{main_anime.cover_url}}" alt="{{main_anime.title}}">
-            <div class="anime-info">
+        <section class="featured-anime">
+            <div class="featured-cover">
+                <img src="{{main_anime.cover_url}}" alt="{{main_anime.title}}" onerror="this.src='https://via.placeholder.com/320x448/cccccc/666666?text=No+Cover'">
+                <div class="episode-badge">{{main_anime.latest_episode}}</div>
+            </div>
+            <div class="featured-info">
                 <h2>{{main_anime.title}}</h2>
-                <div class="meta">
-                    <span class="rating">评分 {{main_anime.score}}</span>
-                    <span class="separator">|</span>
-                    <span class="watchers">观看 {{main_anime.watchers}}</span>
+                <div class="meta-info">
+                    <span class="score">⭐ {{main_anime.score}}</span>
+                    <span class="episodes">📺 {{main_anime.episode_progress}}</span>
                 </div>
-                <div class="air-time">{{main_anime.air_time}} 放送</div>
+                <div class="update-status">{{main_anime.update_status}}</div>
             </div>
         </section>
         {{/if}}
         
-        <!-- 更多番剧列表 -->
+        <!-- 其他番剧网格布局 -->
         {{#if other_animes}}
-        <section class="more-animes">
-            <h3>更多今日更新</h3>
-            {{#each other_animes}}
-            <div class="anime-item">
-                <div class="title">{{title}}</div>
-                <div class="meta">评分 {{score}} | {{air_time}}</div>
+        <section class="anime-grid">
+            <h3 class="grid-title">📺 今日更多更新</h3>
+            <div class="grid-container">
+                {{#each other_animes}}
+                <div class="anime-card">
+                    <div class="card-cover">
+                        <img src="{{cover_url}}" alt="{{title}}" onerror="this.src='https://via.placeholder.com/250x320/cccccc/666666?text=No+Cover'">
+                        <div class="card-episode">{{latest_episode}}</div>
+                    </div>
+                    <div class="card-info">
+                        <h4>{{title}}</h4>
+                        <div class="card-meta">
+                            <span class="card-score">⭐ {{score}}</span>
+                            <span class="card-episodes">{{episode_progress}}</span>
+                        </div>
+                    </div>
+                </div>
+                {{/each}}
             </div>
-            {{/each}}
         </section>
         {{/if}}
         
@@ -49,11 +63,11 @@
             <div class="empty-text">今日暂无新番更新</div>
         </section>
         {{/unless}}
+        
+        <!-- 底部信息 -->
+        <footer class="poster-footer">
+            <div class="source">🎨 Powered by bgm.tv | 生成于 {{generated_time}}</div>
+        </footer>
     </main>
-    
-    <footer class="poster-footer">
-        <div class="source">bgm.tv</div>
-        <div class="generated-time">生成于 {{generated_time}}</div>
-    </footer>
 </body>
 </html>
