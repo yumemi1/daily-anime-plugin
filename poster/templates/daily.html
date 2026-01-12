@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=2.0">
+    <title>新番资讯</title>
+    <link rel="stylesheet" href="minimal-styles.css">
+</head>
+<body class="poster">
+    <header class="poster-header">
+        <div class="date">{{date}}</div>
+        <h1>今日新番资讯</h1>
+    </header>
+    
+    <main class="poster-body">
+        <!-- 主番剧卡片 -->
+        {{#if main_anime}}
+        <section class="main-anime">
+            <img class="cover" src="{{main_anime.cover_url}}" alt="{{main_anime.title}}">
+            <div class="anime-info">
+                <h2>{{main_anime.title}}</h2>
+                <div class="meta">
+                    <span class="rating">评分 {{main_anime.score}}</span>
+                    <span class="separator">|</span>
+                    <span class="watchers">观看 {{main_anime.watchers}}</span>
+                </div>
+                <div class="air-time">{{main_anime.air_time}} 放送</div>
+            </div>
+        </section>
+        {{/if}}
+        
+        <!-- 更多番剧列表 -->
+        {{#if other_animes}}
+        <section class="more-animes">
+            <h3>更多今日更新</h3>
+            {{#each other_animes}}
+            <div class="anime-item">
+                <div class="title">{{title}}</div>
+                <div class="meta">评分 {{score}} | {{air_time}}</div>
+            </div>
+            {{/each}}
+        </section>
+        {{/if}}
+        
+        <!-- 空状态 -->
+        {{#unless has_animes}}
+        <section class="empty-state">
+            <div class="empty-icon">📺</div>
+            <div class="empty-text">今日暂无新番更新</div>
+        </section>
+        {{/unless}}
+    </main>
+    
+    <footer class="poster-footer">
+        <div class="source">bgm.tv</div>
+        <div class="generated-time">生成于 {{generated_time}}</div>
+    </footer>
+</body>
+</html>

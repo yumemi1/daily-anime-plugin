@@ -9,6 +9,17 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 import json
 
+try:
+    from src.common.logger import get_logger
+except ImportError:
+    import logging
+
+    def get_logger(name):
+        return logging.getLogger(name)
+
+
+logger = get_logger("bangumi_api")
+
 
 class BangumiAPIClient:
     """Bangumi API客户端"""
@@ -71,7 +82,7 @@ class BangumiAPIClient:
             data = await self._request("GET", "/calendar")
             return data if isinstance(data, list) else []
         except Exception as e:
-            print(f"获取每日放送日程失败: {str(e)}")
+            logger.error(f"获取每日放送日程失败: {str(e)}")
             return []
 
     async def search_subject(
@@ -104,7 +115,7 @@ class BangumiAPIClient:
             data = await self._request("POST", "/v0/search/subjects", params={"limit": limit}, json=json_data)
             return data.get("data", []) if isinstance(data, dict) else []
         except Exception as e:
-            print(f"搜索条目失败: {str(e)}")
+            logger.error(f"搜索条目失败: {str(e)}")
             return []
 
     async def get_subject_detail(self, subject_id: int) -> Optional[Dict[str, Any]]:
@@ -120,7 +131,7 @@ class BangumiAPIClient:
             data = await self._request("GET", f"/v0/subjects/{subject_id}")
             return data if isinstance(data, dict) else None
         except Exception as e:
-            print(f"获取条目详情失败: {str(e)}")
+            logger.error(f"获取条目详情失败: {str(e)}")
             return None
 
     async def get_subject_episodes(self, subject_id: int, episode_type: Optional[int] = None) -> List[Dict[str, Any]]:
@@ -141,7 +152,7 @@ class BangumiAPIClient:
             data = await self._request("GET", f"/v0/subjects/{subject_id}/episodes", params=params)
             return data.get("data", []) if isinstance(data, dict) else []
         except Exception as e:
-            print(f"获取剧集列表失败: {str(e)}")
+            logger.error(f"获取剧集列表失败: {str(e)}")
             return []
 
     async def get_user_collection(
@@ -165,7 +176,7 @@ class BangumiAPIClient:
             data = await self._request("GET", f"/v0/users/{user_id}/collections", params=params)
             return data.get("data", []) if isinstance(data, dict) else []
         except Exception as e:
-            print(f"获取用户收藏失败: {str(e)}")
+            logger.error(f"获取用户收藏失败: {str(e)}")
             return []
 
 

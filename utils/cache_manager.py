@@ -10,6 +10,17 @@ from datetime import datetime, timedelta
 from threading import Lock
 import asyncio
 
+try:
+    from src.common.logger import get_logger
+except ImportError:
+    import logging
+
+    def get_logger(name):
+        return logging.getLogger(name)
+
+
+logger = get_logger("cache_manager")
+
 
 class CacheItem:
     """缓存项"""
@@ -268,7 +279,7 @@ async def cached_get_calendar(cache_ttl: int = 1800) -> Optional[List[Dict[str, 
                 await cache.set(cache_key, data, cache_ttl)
             return data
     except Exception as e:
-        print(f"获取每日放送日程失败: {str(e)}")
+        logger.error(f"获取每日放送日程失败: {str(e)}")
         return None
 
 
@@ -294,7 +305,7 @@ async def cached_search_subject(
                 await cache.set(cache_key, data, cache_ttl)
             return data
     except Exception as e:
-        print(f"搜索条目失败: {str(e)}")
+        logger.error(f"搜索条目失败: {str(e)}")
         return None
 
 
@@ -318,5 +329,5 @@ async def cached_get_subject_detail(subject_id: int, cache_ttl: int = 3600) -> O
                 await cache.set(cache_key, data, cache_ttl)
             return data
     except Exception as e:
-        print(f"获取条目详情失败: {str(e)}")
+        logger.error(f"获取条目详情失败: {str(e)}")
         return None

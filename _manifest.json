@@ -83,6 +83,13 @@
       "python_packages": [
         "aiohttp",
         "pydantic"
+      ],
+      "optional_python_packages": [
+        {
+          "name": "playwright",
+          "description": "海报生成功能依赖，如需使用请安装: pip install playwright && playwright install chromium",
+          "features": ["海报生成", "图片输出", "定时海报"]
+        }
       ]
     }
   },

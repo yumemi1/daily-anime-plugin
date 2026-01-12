@@ -10,6 +10,17 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass
 from enum import Enum
 
+try:
+    from src.common.logger import get_logger
+except ImportError:
+    import logging
+
+    def get_logger(name):
+        return logging.getLogger(name)
+
+
+logger = get_logger("scheduler")
+
 
 class TaskStatus(Enum):
     """任务状态枚举"""
@@ -133,7 +144,7 @@ class DailyAnimeScheduler:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                print(f"调度器循环出错: {str(e)}")
+                logger.error(f"调度器循环出错: {str(e)}")
                 await asyncio.sleep(60)
 
     async def _run_task(self, task: ScheduledTask):
@@ -162,7 +173,7 @@ class DailyAnimeScheduler:
                 task.next_run = None
 
         except Exception as e:
-            print(f"任务 {task.name} 执行失败: {str(e)}")
+            logger.error(f"任务 {task.name} 执行失败: {str(e)}")
             task.status = TaskStatus.FAILED
             task.retry_count += 1
 
@@ -211,7 +222,7 @@ def create_daily_push_task(push_func, push_time: str, chat_ids: List[str]) -> Sc
         try:
             await push_func(chat_ids)
         except Exception as e:
-            print(f"每日推送执行失败: {str(e)}")
+            logger.error(f"每日推送执行失败: {str(e)}")
 
     # 计算今天的推送时间
     now = datetime.now()
@@ -290,5 +301,50 @@ async def update_daily_push_task(push_time: str, chat_ids: List[str]):
             task.kwargs["chat_ids"] = chat_ids
         else:
             task.kwargs = {"chat_ids": chat_ids}
+
+    return task
+
+
+def create_cron_task(task_func, cron_time: str, task_name: str, interval_seconds: int = 86400) -> ScheduledTask:
+    """创建cron风格定时任务"""
+
+    async def task_wrapper():
+        """任务包装函数"""
+        try:
+            if asyncio.iscoroutinefunction(task_func):
+                await task_func()
+            else:
+                task_func()
+        except Exception as e:
+            logger.error(f"定时任务 {task_name} 执行失败: {str(e)}")
+
+    # 计算下次运行时间
+    now = datetime.now()
+    hour, minute = map(int, cron_time.split(":"))
+    next_run = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+    # 如果今天的执行时间已过，则设置为明天
+    if next_run <= now:
+        next_run += timedelta(days=1)
+
+    return ScheduledTask(
+        name=task_name,
+        func=task_wrapper,
+        next_run=next_run,
+        interval=interval_seconds,  # 默认24小时间隔
+        max_retries=3,
+    )
+
+
+async def add_cron_task(task_func, cron_time: str, task_name: str, interval_seconds: int = 86400):
+    """添加cron风格定时任务"""
+    scheduler = get_global_scheduler()
+
+    # 先移除旧的任务
+    await scheduler.remove_task(task_name)
+
+    # 添加新任务
+    task = create_cron_task(task_func, cron_time, task_name, interval_seconds)
+    await scheduler.add_task(task)
 
     return task

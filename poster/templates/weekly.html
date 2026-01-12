@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=2.0">
+    <title>本周新番汇总</title>
+    <link rel="stylesheet" href="minimal-styles.css">
+</head>
+<body class="poster weekly-poster">
+    <header class="poster-header">
+        <div class="date-range">{{week_start}} - {{week_end}}</div>
+        <h1>本周新番汇总</h1>
+    </header>
+    
+    <main class="poster-body">
+        <!-- 统计信息 -->
+        <section class="stats-section">
+            <div class="stats-card">
+                <div class="stats-number">{{anime_count}}</div>
+                <div class="stats-label">本周更新</div>
+            </div>
+        </section>
+        
+        <!-- 主番剧 -->
+        {{#if main_anime}}
+        <section class="main-anime">
+            <img class="cover" src="{{main_anime.cover_url}}" alt="{{main_anime.title}}">
+            <div class="anime-info">
+                <h2>{{main_anime.title}}</h2>
+                <div class="meta">
+                    <span class="episode">{{main_anime.episode}}</span>
+                    <span class="separator">|</span>
+                    <span class="time">{{main_anime.time}}</span>
+                </div>
+            </div>
+        </section>
+        {{/if}}
+        
+        <!-- 每日汇总 -->
+        {{#if daily_summary}}
+        <section class="daily-summary">
+            <h3>每日更新概览</h3>
+            <div class="daily-grid">
+                {{#each daily_summary}}
+                <div class="day-card">
+                    <div class="day-name">{{day}}</div>
+                    <div class="anime-count">{{count}} 部</div>
+                    <div class="main-anime">{{main}}</div>
+                </div>
+                {{/each}}
+            </div>
+        </section>
+        {{/if}}
+        
+        <!-- 本周亮点 -->
+        {{#if highlights}}
+        <section class="highlights">
+            <h3>本周亮点</h3>
+            <div class="highlight-list">
+                {{#each highlights}}
+                <div class="highlight-item">• {{this}}</div>
+                {{/each}}
+            </div>
+        </section>
+        {{/if}}
+        
+        <!-- 空状态 -->
+        {{#unless has_animes}}
+        <section class="empty-state">
+            <div class="empty-icon">📊</div>
+            <div class="empty-text">本周暂无新番更新</div>
+        </section>
+        {{/unless}}
+    </main>
+    
+    <footer class="poster-footer">
+        <div class="generated-time">生成时间: {{generated_time}}</div>
+    </footer>
+</body>
+</html>

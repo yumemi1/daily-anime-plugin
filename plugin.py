@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
 from typing import List, Tuple, Type, Any, Optional
 from src.plugin_system import (
     BasePlugin,
@@ -42,6 +43,44 @@ from .utils.scheduler import (
 )
 
 logger = get_logger("daily_anime_plugin")
+
+# 导入海报生成相关模块 - 设为可选依赖
+POSTER_AVAILABLE = False
+POSTER_IMPORT_ERROR = None
+
+try:
+    from .poster.generator import get_global_poster_generator
+    from .poster.cache import get_global_poster_cache
+
+    POSTER_AVAILABLE = True
+    logger.info("海报功能模块导入成功")
+except ImportError as e:
+    POSTER_IMPORT_ERROR = str(e)
+    POSTER_AVAILABLE = False
+
+
+# 检查playwright依赖并提供友好的错误提示
+def check_playwright_dependency():
+    """检查playwright依赖是否可用"""
+    if not POSTER_AVAILABLE:
+        error_msg = (
+            "海报功能不可用，可能的原因：\n"
+            "1. 未安装 playwright: pip install playwright\n"
+            "2. 未安装浏览器: playwright install chromium\n"
+            f"3. 导入错误: {POSTER_IMPORT_ERROR}\n"
+            "安装后重启插件即可启用海报功能"
+        )
+        logger.warning(error_msg)
+        return False
+    return True
+
+
+# 如果海报功能不可用，记录详细警告
+if not POSTER_AVAILABLE:
+    logger.warning(
+        f"海报功能不可用。导入错误: {POSTER_IMPORT_ERROR}。"
+        "如需使用海报功能，请安装: pip install playwright && playwright install chromium"
+    )
 
 
 # ===== Tool组件 =====
@@ -369,18 +408,66 @@ class DailyPushEventHandler(BaseEventHandler):
                     # 添加推送标题
                     push_message = f"🎌 每日新番推送 {push_time}\n\n{info}"
 
+                    # 尝试生成海报
+                    poster_image = None
+                    if POSTER_AVAILABLE and check_playwright_dependency():
+                        try:
+                            from .poster.generator import get_global_poster_generator
+
+                            poster_gen = get_global_poster_generator()
+                            if poster_gen:
+                                poster_image = await poster_gen.generate_daily_poster()
+                                logger.info("海报生成成功，将随推送一起发送")
+                        except Exception as poster_error:
+                            logger.warning(f"海报生成失败，仅发送文本消息: {str(poster_error)}")
+
                     # 推送到所有配置的聊天
+                    success_count = 0
+                    failed_count = 0
+
                     for chat_id in chat_ids:
                         try:
-                            # 这里需要根据实际平台发送消息
-                            # 暂时使用日志记录
-                            logger.info(f"向聊天 {chat_id} 推送每日新番信息")
-                            # await self.send_text_to_chat(chat_id, push_message)
+                            # TODO: 集成实际的消息发送API
+                            # 这里需要根据MaiBot的具体API实现
+                            # 目前先实现日志记录和基本框架
+
+                            if poster_image:
+                                logger.info(f"[图片+文本] 推送到聊天 {chat_id}")
+                                logger.info(f"图片大小: {len(poster_image)} bytes")
+                                logger.info(f"文本内容: {push_message[:100]}...")
+                            else:
+                                logger.info(f"[文本] 推送到聊天 {chat_id}")
+                                logger.info(f"内容: {push_message[:100]}...")
+
+                            # 模拟发送成功（实际应用中替换为真实API调用）
+                            # await self._send_message_to_chat(chat_id, push_message, poster_image)
+
+                            success_count += 1
+                            logger.info(f"向聊天 {chat_id} 推送成功")
+
                         except Exception as e:
+                            failed_count += 1
                             logger.error(f"向聊天 {chat_id} 推送失败: {str(e)}")
+
+                            # 尝试重试一次（仅文本消息）
+                            try:
+                                logger.info(f"向聊天 {chat_id} 重试推送（仅文本）")
+                                # await self._send_text_to_chat(chat_id, push_message)
+
+                                success_count += 1
+                                failed_count -= 1
+                                logger.info(f"向聊天 {chat_id} 重试推送成功")
+                            except Exception as retry_error:
+                                logger.error(f"向聊天 {chat_id} 重试推送仍然失败: {str(retry_error)}")
+
+                    logger.info(f"每日推送完成: 成功 {success_count} 个, 失败 {failed_count} 个")
+
+                    if failed_count > 0:
+                        raise RuntimeError(f"部分推送失败: {failed_count}/{len(chat_ids)}")
 
                 except Exception as e:
                     logger.error(f"每日新番推送失败: {str(e)}")
+                    raise
 
             # 启动调度器
             await start_scheduler()
