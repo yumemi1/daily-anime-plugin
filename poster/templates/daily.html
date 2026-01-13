@@ -11,23 +11,26 @@
         <!-- 头部装饰区域 -->
         <section class="hero-section">
             <div class="date-badge">{{date}}</div>
-            <h1 class="main-title">🎬 今日新番更新</h1>
+            <h1 class="main-title">今日新番更新</h1>
         </section>
         
         <!-- 主番剧横向卡片 -->
         {{#if main_anime}}
         <section class="featured-anime">
             <div class="featured-cover">
-                <img src="{{main_anime.cover_url}}" alt="{{main_anime.title}}" onerror="this.src='https://via.placeholder.com/320x448/cccccc/666666?text=No+Cover'">
+                <img src="{{main_anime.cover_url}}" alt="{{main_anime.title}}" onerror="this.src='https://via.placeholder.com/360x504/667eea/f5f5f5?text=暂无封面'">
                 <div class="episode-badge">{{main_anime.latest_episode}}</div>
             </div>
             <div class="featured-info">
                 <h2>{{main_anime.title}}</h2>
                 <div class="meta-info">
-                    <span class="score">⭐ {{main_anime.score}}</span>
-                    <span class="episodes">📺 {{main_anime.episode_progress}}</span>
+                    <span class="score">{{main_anime.score}}</span>
+                    <span class="watchers">{{main_anime.watchers}}人追番</span>
+                    <span class="episodes">{{main_anime.episode_progress}}</span>
                 </div>
-                <div class="update-status">{{main_anime.update_status}}</div>
+                <div class="update-status" style="background: {{main_anime.air_status_color}}">
+                    {{main_anime.update_status}}
+                </div>
             </div>
         </section>
         {{/if}}
@@ -35,18 +38,18 @@
         <!-- 其他番剧网格布局 -->
         {{#if other_animes}}
         <section class="anime-grid">
-            <h3 class="grid-title">📺 今日更多更新</h3>
+            <h3 class="grid-title">今日更多更新</h3>
             <div class="grid-container">
                 {{#each other_animes}}
                 <div class="anime-card">
                     <div class="card-cover">
-                        <img src="{{cover_url}}" alt="{{title}}" onerror="this.src='https://via.placeholder.com/250x320/cccccc/666666?text=No+Cover'">
+                        <img src="{{cover_url}}" alt="{{title}}" onerror="this.src='https://via.placeholder.com/250x320/667eea/f5f5f5?text=暂无封面'">
                         <div class="card-episode">{{latest_episode}}</div>
                     </div>
                     <div class="card-info">
                         <h4>{{title}}</h4>
                         <div class="card-meta">
-                            <span class="card-score">⭐ {{score}}</span>
+                            <span class="card-score">{{score}}</span>
                             <span class="card-episodes">{{episode_progress}}</span>
                         </div>
                     </div>
@@ -59,14 +62,14 @@
         <!-- 空状态 -->
         {{#unless has_animes}}
         <section class="empty-state">
-            <div class="empty-icon">📺</div>
+            <div class="empty-icon">TV</div>
             <div class="empty-text">今日暂无新番更新</div>
         </section>
         {{/unless}}
         
         <!-- 底部信息 -->
         <footer class="poster-footer">
-            <div class="source">🎨 Powered by bgm.tv | 生成于 {{generated_time}}</div>
+            <div class="source">Powered by bgm.tv | 生成于 {{generated_time}}</div>
         </footer>
     </main>
 </body>

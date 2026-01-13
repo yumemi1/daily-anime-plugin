@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "name": "每日新番资讯插件 (Daily Anime Plugin)",
   "version": "1.0.0",
-  "description": "基于Bangumi API的每日新番资讯插件，提供新番查询、智能推荐和定时推送功能",
+  "description": "基于Bangumi API的每日新番资讯插件，提供新番查询、智能推荐、精美海报生成和定时推送功能",
   "author": {
     "name": "yumemi1",
     "url": "https://github.com/yumemi1"
@@ -78,6 +78,16 @@
         "description": "生成新番海报工具"
       },
       {
+        "type": "tool",
+        "name": "get_anime_detail",
+        "description": "获取番剧详细信息工具"
+      },
+      {
+        "type": "tool",
+        "name": "manage_blacklist",
+        "description": "管理番剧黑名单工具"
+      },
+      {
         "type": "action",
         "name": "anime_info_response",
         "description": "智能响应新番相关询问"
@@ -91,7 +101,11 @@
       "智能对话响应",
       "缓存优化机制",
       "定时推送功能",
-      "多平台消息格式适配"
+      "多平台消息格式适配",
+      "精美海报生成",
+      "剧集信息获取",
+      "番剧过滤系统",
+      "多层缓存策略"
     ],
     "dependencies": {
       "external_apis": [

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from datetime import datetime
 from typing import List, Tuple, Type, Any, Optional
 from src.plugin_system import (
@@ -41,6 +42,7 @@ from .utils.scheduler import (
     add_daily_push_task,
     update_daily_push_task,
 )
+from .utils.blacklist_manager import init_global_blacklist_manager, get_global_blacklist_manager
 
 logger = get_logger("daily_anime_plugin")
 
@@ -103,6 +105,14 @@ class GetDailyAnimeTool(BaseTool):
             if calendar_data is None:
                 return {"name": self.name, "content": "获取每日新番信息失败，请稍后重试"}
 
+            # 应用黑名单过滤
+            blacklist_manager = get_global_blacklist_manager()
+            if blacklist_manager:
+                # 对每日数据应用黑名单过滤
+                for day_info in calendar_data:
+                    if "items" in day_info:
+                        day_info["items"] = blacklist_manager.filter_anime_list(day_info["items"])
+
             # 格式化数据
             formatted_info = BangumiDataFormatter.format_calendar_info(calendar_data)
 
@@ -136,6 +146,11 @@ class SearchAnimeTool(BaseTool):
             search_results = await cached_search_subject(keyword, type_filter="anime", limit=limit)
             if search_results is None:
                 return {"name": self.name, "content": "搜索番剧信息失败，请稍后重试"}
+
+            # 应用黑名单过滤
+            blacklist_manager = get_global_blacklist_manager()
+            if blacklist_manager:
+                search_results = blacklist_manager.filter_anime_list(search_results)
 
             # 格式化搜索结果
             formatted_results = BangumiDataFormatter.format_search_results(search_results, keyword)
@@ -176,6 +191,89 @@ class GetAnimeDetailTool(BaseTool):
         except Exception as e:
             logger.error(f"获取番剧详情失败: {str(e)}")
             return {"name": self.name, "content": f"获取番剧详情时发生错误: {str(e)}"}
+
+
+class ManageBlacklistTool(BaseTool):
+    """管理番剧黑名单工具"""
+
+    name = "manage_anime_blacklist"
+    description = "管理番剧过滤黑名单配置"
+    parameters = [
+        ("action", ToolParamType.STRING, "操作类型 (get_config/add/remove/update)", True, None),
+        ("title", ToolParamType.STRING, "番剧标题（用于add/remove）", False, None),
+        ("list_type", ToolParamType.STRING, "列表类型（用于add/remove，默认custom）", False, None),
+        ("config_data", ToolParamType.STRING, "配置数据（JSON格式，用于update）", False, None),
+    ]
+    available_for_llm = True
+
+    async def execute(self, function_args: dict[str, Any]) -> dict[str, Any]:
+        """执行黑名单管理"""
+        try:
+            action = function_args.get("action", "")
+
+            blacklist_manager = get_global_blacklist_manager()
+            if not blacklist_manager:
+                return {"name": self.name, "content": "黑名单管理器不可用"}
+
+            if action == "get_config":
+                config = blacklist_manager.get_config()
+                return {
+                    "name": self.name,
+                    "content": f"当前黑名单配置：\n{json.dumps(config, ensure_ascii=False, indent=2)}",
+                }
+
+            elif action == "add":
+                title = function_args.get("title", "")
+                list_type = function_args.get("list_type", "custom")
+
+                if not title:
+                    return {"name": self.name, "content": "请提供要添加的番剧标题"}
+
+                success = blacklist_manager.add_to_blacklist(title, list_type)
+                if success:
+                    return {"name": self.name, "content": f"已将「{title}」添加到{list_type}黑名单"}
+                else:
+                    return {"name": self.name, "content": f"添加到黑名单失败"}
+
+            elif action == "remove":
+                title = function_args.get("title", "")
+                list_type = function_args.get("list_type", "custom")
+
+                if not title:
+                    return {"name": self.name, "content": "请提供要移除的番剧标题"}
+
+                success = blacklist_manager.remove_from_blacklist(title, list_type)
+                if success:
+                    return {"name": self.name, "content": f"已将「{title}」从{list_type}黑名单中移除"}
+                else:
+                    return {"name": self.name, "content": f"从黑名单移除失败"}
+
+            elif action == "update":
+                config_data_str = function_args.get("config_data", "")
+
+                if not config_data_str:
+                    return {"name": self.name, "content": "请提供配置数据（JSON格式）"}
+
+                try:
+                    config_data = json.loads(config_data_str)
+                except json.JSONDecodeError:
+                    return {"name": self.name, "content": "配置数据格式错误，请提供有效的JSON"}
+
+                success = blacklist_manager.update_config(config_data)
+                if success:
+                    return {"name": self.name, "content": "黑名单配置更新成功"}
+                else:
+                    return {"name": self.name, "content": "黑名单配置更新失败"}
+
+            else:
+                return {
+                    "name": self.name,
+                    "content": f"不支持的操作类型: {action}，支持的操作: get_config, add, remove, update",
+                }
+
+        except Exception as e:
+            logger.error(f"管理黑名单失败: {str(e)}")
+            return {"name": self.name, "content": f"管理黑名单时发生错误: {str(e)}"}
 
 
 class GeneratePosterTool(BaseTool):
@@ -848,6 +946,7 @@ class DailyAnimePlugin(BasePlugin):
         "cache": "缓存配置",
         "push": "推送配置",
         "poster": "海报功能配置",
+        "filter": "番剧过滤配置",
     }
 
     @property
@@ -868,6 +967,7 @@ class DailyAnimePlugin(BasePlugin):
                 "calendar_ttl": ConfigField(type=int, default=1800, description="每日放送日程缓存时间(秒)"),
                 "search_ttl": ConfigField(type=int, default=3600, description="搜索结果缓存时间(秒)"),
                 "detail_ttl": ConfigField(type=int, default=3600, description="番剧详情缓存时间(秒)"),
+                "episodes_ttl": ConfigField(type=int, default=7200, description="剧集信息缓存时间(秒)"),
             },
             "push": {
                 "daily_push_enabled": ConfigField(type=bool, default=False, description="是否启用每日推送"),
@@ -883,7 +983,45 @@ class DailyAnimePlugin(BasePlugin):
                 "headless_browser": ConfigField(type=bool, default=True, description="是否使用无头浏览器模式"),
                 "cache_dir": ConfigField(type=str, default="posters", description="海报缓存目录名称"),
             },
+            "filter": {
+                "enabled": ConfigField(type=bool, default=True, description="是否启用番剧过滤功能"),
+                "chinese_anime_filter": {
+                    "enabled": ConfigField(type=bool, default=True, description="是否过滤中国大陆制作的动画"),
+                    "description": "默认过滤掉中国大陆制作的动画",
+                },
+                "keyword_blacklist": {
+                    "enabled": ConfigField(type=bool, default=True, description="是否启用关键词过滤"),
+                    "keywords": ConfigField(
+                        type=list,
+                        default=["试看集", "PV", "预告", "OP", "ED", "CM", "番外", "OVA", "OAD", "我的英雄学院"],
+                        description="需要过滤的关键词列表",
+                    ),
+                    "description": "过滤包含特定关键词的内容",
+                },
+                "studio_blacklist": {
+                    "enabled": ConfigField(type=bool, default=False, description="是否启用制作公司黑名单"),
+                    "studios": ConfigField(type=list, default=[], description="黑名单制作公司列表"),
+                    "description": "黑名单制作公司",
+                },
+                "custom_blacklist": {
+                    "enabled": ConfigField(type=bool, default=False, description="是否启用自定义标题黑名单"),
+                    "titles": ConfigField(type=list, default=[], description="黑名单番剧标题列表"),
+                    "description": "自定义黑名单番剧标题",
+                },
+            },
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 初始化全局黑名单管理器
+        init_global_blacklist_manager(self)
+        logger.info("全局黑名单管理器已初始化")
+
+        # 初始化海报生成器的插件实例
+        if POSTER_AVAILABLE:
+            from .poster.generator import set_poster_generator_plugin_instance
+
+            set_poster_generator_plugin_instance(self)
 
     def get_plugin_components(self):
         """返回插件包含的组件列表"""
@@ -893,6 +1031,7 @@ class DailyAnimePlugin(BasePlugin):
             (SearchAnimeTool.get_tool_info(), SearchAnimeTool),
             (GetAnimeDetailTool.get_tool_info(), GetAnimeDetailTool),
             (GeneratePosterTool.get_tool_info(), GeneratePosterTool),
+            (ManageBlacklistTool.get_tool_info(), ManageBlacklistTool),
             # Command组件
             (AnimeTodayCommand.get_command_info(), AnimeTodayCommand),
             (AnimeWeekCommand.get_command_info(), AnimeWeekCommand),

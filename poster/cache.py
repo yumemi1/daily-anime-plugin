@@ -101,8 +101,8 @@ class PosterCache:
             with open(filepath, "wb") as f:
                 f.write(image_bytes)
 
-            # 准备元数据
-            poster_info = {
+            # 增强元数据
+            enhanced_metadata = {
                 "type": poster_type,
                 "filename": filename,
                 "filepath": filepath,
@@ -110,10 +110,13 @@ class PosterCache:
                 "created_at": datetime.now().isoformat(),
                 "base64": base64.b64encode(image_bytes).decode(),
                 "date_str": date_str,
+                "cache_version": "2.0",
             }
 
             if metadata:
-                poster_info.update(metadata)
+                enhanced_metadata.update(metadata)
+
+            poster_info = enhanced_metadata
 
             # 更新缓存索引
             with self._lock:

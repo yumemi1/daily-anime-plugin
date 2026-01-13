@@ -10,6 +10,7 @@
 - **详细番剧信息** - 提供评分、简介、集数等完整数据
 - **剧集进度追踪** - 显示最新更新集数和总集数信息
 - **自然语言交互** - 支持智能对话式查询
+- **智能过滤系统** - 支持关键词和工作室黑名单，自动过滤不感兴趣的内容
 - **高性能缓存** - 多层缓存机制，剧集信息独立缓存
 - **定时推送** - 自定义时间推送新番更新和海报
 
@@ -66,6 +67,7 @@ generate_anime_poster(poster_type="daily", force_refresh=False)
 get_daily_anime()
 search_anime(keyword="关键词")
 get_anime_detail(subject_id=12345)
+manage_blacklist(action="add/remove/list", target="关键词/工作室名")
 ```
 
 ## 配置选项
@@ -107,6 +109,29 @@ get_anime_detail(subject_id=12345)
 - **max_cache_days** (integer, 可选): 海报文件最大缓存天数，超过此天数的海报将被清理，默认 7 天
 - **headless_browser** (boolean, 可选): 是否使用无头浏览器模式，true 为后台运行，false 为显示浏览器窗口，默认 true
 - **cache_dir** (string, 可选): 海报缓存目录名称，相对于插件目录，默认 "posters"
+
+### [filter] 番剧过滤配置
+
+- **enabled** (boolean, 必需): 是否启用番剧过滤功能，true 为启用，false 为禁用，默认 true
+
+#### [filter.chinese_anime_filter] 国漫过滤
+
+- **enabled** (boolean, 必需): 是否过滤国漫，true 为过滤，false 为不过滤，默认 true
+
+#### [filter.keyword_blacklist] 关键词黑名单
+
+- **enabled** (boolean, 必需): 是否启用关键词过滤，true 为启用，false 为禁用，默认 true
+- **keywords** (array, 可选): 需要过滤的关键词列表，默认 ["试看集", "PV", "预告", "OP", "ED", "CM", "番外", "OVA", "OAD"]
+
+#### [filter.studio_blacklist] 制作公司黑名单
+
+- **enabled** (boolean, 必需): 是否启用制作公司黑名单，true 为启用，false 为禁用，默认 false
+- **studios** (array, 可选): 黑名单制作公司列表，默认为空数组 []
+
+#### [filter.custom_blacklist] 自定义标题黑名单
+
+- **enabled** (boolean, 必需): 是否启用自定义标题黑名单，true 为启用，false 为禁用，默认 false
+- **titles** (array, 可选): 黑名单番剧标题列表，默认为空数组 []
 
 **注意事项：**
 
@@ -150,24 +175,33 @@ get_anime_detail(subject_id=12345)
 
 ```
 plugins/daily-anime-plugin/
-├── plugin.py              # 主插件文件
-├── _manifest.json         # 插件清单
-├── config.toml.example    # 配置模板
-├── utils/                 # 工具模块
-│   ├── bangumi_api.py     # Bangumi API客户端
-│   ├── cache_manager.py   # 缓存管理器
-│   └── scheduler.py       # 定时任务调度
-├── poster/                # 海报生成模块
-│   ├── renderer.py        # Playwright渲染器
-│   ├── generator.py       # 海报生成器
-│   ├── cache.py          # 海报缓存管理
-│   └── templates/        # HTML模板
-│       ├── daily.html     # 每日海报模板（现代化设计）
-│       ├── weekly.html    # 周报海报模板
-│       └── minimal-styles.css  # 现代化CSS样式（渐变+玻璃态）
-└── posters/              # 海报存储目录
-    ├── daily/            # 每日海报
-    └── weekly/           # 周报海报
+├── __init__.py             # 插件包初始化文件
+├── plugin.py               # 主插件文件，包含所有组件和功能逻辑
+├── _manifest.json          # 插件清单文件
+├── README.md               # 插件说明文档
+├── LICENSE                 # MIT许可证文件
+├── .gitignore             # Git忽略规则
+├── utils/                  # 工具模块目录
+│   ├── __init__.py        # 工具模块初始化
+│   ├── bangumi_api.py     # Bangumi API客户端和数据格式化
+│   ├── cache_manager.py   # 多层缓存管理器（内存+文件）
+│   ├── scheduler.py       # 定时任务调度器
+│   └── blacklist_manager.py # 番剧黑名单管理器
+├── poster/                 # 海报生成模块目录
+│   ├── __init__.py        # 海报模块初始化
+│   ├── renderer.py        # Playwright渲染器（HTML→图片）
+│   ├── generator.py       # 海报生成器（数据+模板渲染）
+│   ├── cache.py          # 海报文件缓存管理
+│   └── templates/        # HTML模板目录
+│       ├── daily.html     # 每日新番海报模板
+│       ├── weekly.html    # 本周汇总海报模板
+│       └── minimal-styles.css  # 现代化CSS样式
+├── posters/               # 海报存储目录
+│   ├── daily/            # 每日海报文件存储
+│   ├── weekly/           # 周报海报文件存储
+│   └── cache.json        # 海报缓存索引文件
+└── _locales/              # 国际化资源目录
+    └── zh-CN.json        # 中文本地化文件
 ```
 
 ## 故障排除

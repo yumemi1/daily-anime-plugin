@@ -300,8 +300,34 @@ class PosterRenderer:
                 # 设置页面内容
                 await page.set_content(rendered_html, wait_until="domcontentloaded")
 
-                # 等待图片加载
+                # 增强图片加载等待
                 await page.wait_for_load_state("domcontentloaded", timeout=30000)
+
+                # 等待所有图片加载完成
+                try:
+                    await page.wait_for_function(
+                        """() => {
+                            const images = Array.from(document.images);
+                            return images.every(img => img.complete && img.naturalHeight !== 0) ||
+                                   images.some(img => img.naturalHeight === 0); // 部分失败也继续
+                        }""",
+                        timeout=15000,
+                    )
+                except Exception as e:
+                    logger.warning(f"图片加载超时，继续渲染: {e}")
+
+                # 检查并记录图片加载状态
+                image_status = await page.evaluate("""
+                    Array.from(document.images).map((img, index) => ({
+                        index,
+                        src: img.src,
+                        loaded: img.complete,
+                        error: img.naturalHeight === 0,
+                        dimensions: `${img.naturalWidth}x${img.naturalHeight}`
+                    }))
+                """)
+
+                logger.info(f"图片加载状态: {image_status}")
 
                 # 获取页面实际高度
                 body_height = await page.evaluate("document.body.scrollHeight")

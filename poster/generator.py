@@ -19,6 +19,7 @@ except ImportError:
 
 from .renderer import PosterRenderer
 from .cache import PosterCache
+from ..utils.blacklist_manager import get_global_blacklist_manager
 
 logger = get_logger("poster_generator")
 
@@ -46,11 +47,47 @@ except ImportError:
 class PosterGenerator:
     """海报生成器"""
 
-    def __init__(self, cache: PosterCache):
+    def __init__(self, cache: PosterCache, plugin_instance=None):
         self.cache = cache
+        self.plugin_instance = plugin_instance
+
+    def filter_anime_list(self, anime_list: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """使用全局黑名单管理器过滤番剧列表"""
+        blacklist_manager = get_global_blacklist_manager()
+        if blacklist_manager:
+            return blacklist_manager.filter_anime_list(anime_list)
+        return anime_list
+
+    def get_blacklist_config(self) -> Dict[str, Any]:
+        """获取当前黑名单配置"""
+        blacklist_manager = get_global_blacklist_manager()
+        if blacklist_manager:
+            return blacklist_manager.get_config()
+        return {}
+
+    def update_blacklist_config(self, new_config: Dict[str, Any]) -> bool:
+        """更新黑名单配置"""
+        blacklist_manager = get_global_blacklist_manager()
+        if blacklist_manager:
+            return blacklist_manager.update_config(new_config)
+        return False
+
+    def add_to_blacklist(self, title: str, list_type: str = "custom") -> bool:
+        """添加番剧到黑名单"""
+        blacklist_manager = get_global_blacklist_manager()
+        if blacklist_manager:
+            return blacklist_manager.add_to_blacklist(title, list_type)
+        return False
+
+    def remove_from_blacklist(self, title: str, list_type: str = "custom") -> bool:
+        """从黑名单中移除番剧"""
+        blacklist_manager = get_global_blacklist_manager()
+        if blacklist_manager:
+            return blacklist_manager.remove_from_blacklist(title, list_type)
+        return False
 
     async def generate_daily_poster(self) -> Optional[Dict[str, Any]]:
-        """生成每日新番海报"""
+        """生成每日新番海报 - 增强错误处理"""
         try:
             logger.info("开始生成每日新番海报")
 
@@ -58,10 +95,14 @@ class PosterGenerator:
             calendar_data = await self._get_calendar_data()
             if not calendar_data:
                 logger.warning("无法获取放送日程数据")
-                return None
+                return await self._generate_empty_poster("daily", "暂无今日新番数据")
 
             # 准备模板数据
             template_data = await self._prepare_daily_data(calendar_data)
+
+            # 数据完整性检查
+            if not template_data.get("has_animes") or not template_data.get("main_anime"):
+                return await self._generate_empty_poster("daily", "今日暂无新番更新")
 
             # 渲染海报
             async with PosterRenderer() as renderer:
@@ -69,20 +110,48 @@ class PosterGenerator:
 
             # 保存到缓存
             metadata = {
-                "anime_count": len(template_data.get("other_animes", []))
-                + (1 if template_data.get("main_anime") else 0),
+                "anime_count": len(template_data.get("other_animes", [])) + 1,
                 "date": template_data.get("date"),
                 "template": "daily",
+                "success": True,
             }
 
             poster_info = await self.cache.save_poster("daily", image_bytes, metadata)
-
             logger.info("每日新番海报生成成功")
             return poster_info
 
         except Exception as e:
             logger.error(f"生成每日海报失败: {e}")
-            return None
+            # 生成错误状态海报
+            return await self._generate_error_poster("daily", str(e))
+
+    async def _generate_empty_poster(self, poster_type: str, message: str) -> Dict[str, Any]:
+        """生成空状态海报"""
+        empty_data = {
+            "date": datetime.now().strftime("%Y年%m月%d日"),
+            "has_animes": False,
+            "message": message,
+            "generated_time": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        }
+
+        async with PosterRenderer() as renderer:
+            image_bytes = await renderer.render_poster(empty_data, "empty.html")
+            metadata = {"type": "empty", "message": message}
+            return await self.cache.save_poster(f"{poster_type}_empty", image_bytes, metadata)
+
+    async def _generate_error_poster(self, poster_type: str, error_msg: str) -> Dict[str, Any]:
+        """生成错误状态海报"""
+        error_data = {
+            "date": datetime.now().strftime("%Y年%m月%d日"),
+            "has_animes": False,
+            "error_message": error_msg,
+            "generated_time": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        }
+
+        async with PosterRenderer() as renderer:
+            image_bytes = await renderer.render_poster(error_data, "error.html")
+            metadata = {"type": "error", "error": error_msg}
+            return await self.cache.save_poster(f"{poster_type}_error", image_bytes, metadata)
 
     async def generate_weekly_poster(self) -> Optional[Dict[str, Any]]:
         """生成本周汇总海报"""
@@ -155,12 +224,25 @@ class PosterGenerator:
                 "generated_time": datetime.now().strftime("%Y-%m-%d %H:%M"),
             }
 
-        # 选择主番剧（评分最高的）
+        # 应用过滤规则
+        filtered_animes = self.filter_anime_list(today_animes)
+
+        if not filtered_animes:
+            # 过滤后没有番剧
+            return {
+                "date": today_name,
+                "has_animes": False,
+                "main_anime": None,
+                "other_animes": [],
+                "generated_time": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            }
+
+        # 选择主番剧（热度最高的）
         main_anime = None
         other_animes = []
 
-        # 按评分排序
-        sorted_animes = sorted(today_animes, key=lambda x: x.get("rating", {}).get("score", 0), reverse=True)
+        # 按热度排序
+        sorted_animes = sorted(filtered_animes, key=self.calculate_popularity_score, reverse=True)
 
         if sorted_animes:
             main_anime = await self._format_anime_for_template(sorted_animes[0])
@@ -184,14 +266,17 @@ class PosterGenerator:
         # 获取本周的日期范围
         week_name = f"{week_start.strftime('%Y年第%W周')}"
 
-        # 收集本周所有番剧，按评分排序
+        # 收集本周所有番剧
         all_animes = []
         for day_info in calendar_data:
             items = day_info.get("items", [])
             all_animes.extend(items)
 
-        # 按评分排序，取前8个
-        sorted_animes = sorted(all_animes, key=lambda x: x.get("rating", {}).get("score", 0), reverse=True)
+        # 应用过滤规则
+        filtered_animes = self.filter_anime_list(all_animes)
+
+        # 按热度排序，取前8个
+        sorted_animes = sorted(filtered_animes, key=self.calculate_popularity_score, reverse=True)
         top_animes = sorted_animes[:8]
 
         if not top_animes:
@@ -265,7 +350,7 @@ class PosterGenerator:
                         "latest_episode": latest_episode,
                         "total_episodes": total_eps_str,
                         "episode_progress": episode_progress,
-                        "update_status": "📺 连载中" if eps > 0 else "🔄 即将开播",
+                        "update_status": "连载中" if eps > 0 else "即将开播",
                     }
                 else:
                     logger.warning(f"无法获取条目详情: {subject_id}")
@@ -278,7 +363,7 @@ class PosterGenerator:
             "latest_episode": "第1话",
             "total_episodes": "?",
             "episode_progress": "?/?",
-            "update_status": "📺 更新中",
+            "update_status": "更新中",
         }
 
     def _extract_episodes_from_infobox(self, infobox: List[Dict[str, Any]]) -> int:
@@ -371,14 +456,14 @@ class PosterGenerator:
                     try:
                         ep_date = datetime.fromisoformat(air_date.replace("Z", "+00:00"))
                         if ep_date >= week_ago:
-                            return "✅ 今日更新"
+                            return "今日更新"
                     except ValueError:
                         continue
 
-            return "📺 连载中"
+            return "连载中"
         except Exception as e:
             logger.warning(f"解析更新状态失败: {e}")
-            return "📺 连载中"
+            return "连载中"
 
     async def _format_anime_for_template(self, anime: Dict[str, Any]) -> Dict[str, Any]:
         """格式化番剧数据用于模板"""
@@ -400,18 +485,46 @@ class PosterGenerator:
         else:
             logger.debug(f"番剧 {title} 没有有效的subject_id，跳过剧集信息获取")
 
-        # 封面图片
+        # 封面图片 - 添加详细调试
         cover_url = ""
         try:
             images = anime.get("images", {})
+            logger.info(f"番剧 {title} 图片数据: {images}")
+
             if isinstance(images, dict):
                 cover_url = images.get("medium") or images.get("common") or images.get("large", "")
+
+            logger.info(f"选择的封面URL: {cover_url}")
+
+            # 验证URL可访问性
+            if cover_url and not cover_url.startswith("https://via.placeholder"):
+                try:
+                    import aiohttp
+
+                    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as session:
+                        async with session.head(cover_url) as response:
+                            logger.info(f"图片 {cover_url} 访问状态: {response.status}")
+                            if response.status != 200:
+                                logger.warning(f"图片无法访问，状态码: {response.status}")
+                                cover_url = ""
+                except Exception as e:
+                    logger.warning(f"图片访问性检查失败 {cover_url}: {e}")
+                    cover_url = ""
+
         except Exception as e:
             logger.warning(f"获取封面图片失败: {e}")
 
         if not cover_url:
-            # 使用占位图片
-            cover_url = "https://via.placeholder.com/300x400/cccccc/666666?text=No+Cover"
+            logger.warning(f"使用占位图片: {title}")
+            cover_url = self.get_fallback_cover_url(title)
+
+        # 追番人数信息
+        collection = anime.get("collection", {})
+        total_watchers = collection.get("wish", 0) + collection.get("doing", 0) + collection.get("collect", 0)
+        watchers_str = f"{total_watchers}" if total_watchers > 0 else "暂无"
+
+        # 播放状态颜色
+        air_status = self._get_air_status(anime, episode_info)
 
         # 确保所有数据都是有效的
         latest_episode = episode_info.get("latest_episode", "第1话") if episode_info else "第1话"
@@ -421,10 +534,12 @@ class PosterGenerator:
         return {
             "title": title or "未知番剧",
             "score": score_str,
+            "watchers": watchers_str,
             "cover_url": cover_url,
             "latest_episode": latest_episode,
             "episode_progress": episode_progress,
             "update_status": update_status,
+            "air_status_color": self._get_status_color(air_status),
         }
 
     async def get_cached_poster(self, poster_type: str) -> Optional[Dict[str, Any]]:
@@ -460,17 +575,100 @@ class PosterGenerator:
         """获取缓存统计"""
         return self.cache.get_cache_stats()
 
+    def get_fallback_cover_url(self, title: str = "未知番剧") -> str:
+        """生成更好的占位图片URL"""
+        # 使用更美观的占位图服务
+        encoded_title = title[:10]  # 限制长度
+        return f"https://via.placeholder.com/360x504/667eea/f5f5f5?text={encoded_title}&font-size=24"
+
+    def calculate_popularity_score(self, anime: Dict[str, Any]) -> float:
+        """计算番剧热度分数"""
+
+        # 评分 (0-10)
+        rating = anime.get("rating", {}).get("score", 0)
+
+        # 追番人数 (0-∞)
+        collection = anime.get("collection", {})
+        watchers = collection.get("wish", 0) + collection.get("doing", 0) + collection.get("collect", 0)
+
+        # 更新状态（二值化：正在更新=1，其他=0）
+        is_airing = anime.get("air_date", "") != "" and anime.get("eps", 0) > 0
+
+        # 新番加成（30天内开播）
+        air_date_str = anime.get("air_date", "")
+        new_bonus = 0
+        if air_date_str:
+            try:
+                from datetime import datetime, timedelta
+
+                air_date = datetime.fromisoformat(air_date_str.replace("Z", "+00:00"))
+                if (datetime.now(air_date.tzinfo) - air_date).days <= 30:
+                    new_bonus = 1.0
+            except:
+                pass
+
+        # 综合评分计算
+        # 评分标准化 (0-1)
+        normalized_rating = min(rating / 10.0, 1.0) if rating > 0 else 0
+
+        # 追番人数标准化 (0-1，假设1000人为满分)
+        normalized_watchers = min(watchers / 1000.0, 1.0) if watchers > 0 else 0
+
+        # 最终分数：40%评分 + 35%追番人数 + 15%更新状态 + 10%新番加成
+        final_score = normalized_rating * 0.4 + normalized_watchers * 0.35 + is_airing * 0.15 + new_bonus * 0.1
+
+        logger.info(
+            f"番剧 {anime.get('name', '未知')} 热度计算: "
+            f"评分={rating}, 追番={watchers}, 更新={is_airing}, 新番={new_bonus}, "
+            f"最终分数={final_score:.3f}"
+        )
+
+        return final_score
+
+    def _get_air_status(self, anime: Dict[str, Any], episode_info: Dict[str, Any]) -> str:
+        """获取播放状态"""
+        eps = anime.get("eps", 0)
+        total_eps = anime.get("total_episodes", 0)
+
+        if eps == 0:
+            return "即将开播"
+        elif total_eps > 0 and eps >= total_eps:
+            return "已完结"
+        else:
+            return "连载中"
+
+    def _get_status_color(self, status: str) -> str:
+        """获取状态颜色"""
+        colors = {
+            "即将开播": "#9f7aea",  # 紫色
+            "连载中": "#48bb78",  # 绿色
+            "已完结": "#4299e1",  # 蓝色
+        }
+        return colors.get(status, "#718096")
+
 
 # 全局生成器实例
 _global_generator: Optional[PosterGenerator] = None
 
 
-def get_global_poster_generator() -> PosterGenerator:
+def get_global_poster_generator(plugin_instance=None) -> PosterGenerator:
     """获取全局海报生成器实例"""
     global _global_generator
     if _global_generator is None:
         from .cache import get_global_poster_cache
 
         cache = get_global_poster_cache()
-        _global_generator = PosterGenerator(cache)
+        _global_generator = PosterGenerator(cache, plugin_instance)
     return _global_generator
+
+
+def set_poster_generator_plugin_instance(plugin_instance) -> None:
+    """设置海报生成器的插件实例"""
+    global _global_generator
+    if _global_generator:
+        _global_generator.plugin_instance = plugin_instance
+    else:
+        from .cache import get_global_poster_cache
+
+        cache = get_global_poster_cache()
+        _global_generator = PosterGenerator(cache, plugin_instance)
