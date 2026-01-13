@@ -27,7 +27,7 @@ class PosterRenderer:
 
     def __init__(self, headless: bool = True):
         self.headless = headless
-        self.viewport = {"width": 720, "height": 1280}
+        self.viewport = {"width": 1200, "height": 1600}
         self.template_dir = os.path.dirname(os.path.abspath(__file__))
         self.browser: Optional[Browser] = None
         self.context: Optional[BrowserContext] = None
@@ -57,7 +57,11 @@ class PosterRenderer:
             )
 
             self.context = await self.browser.new_context(
-                viewport=self.viewport, user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                viewport=self.viewport,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                # 配置字体支持emoji和中文字符
+                locale="zh-CN",
+                timezone_id="Asia/Shanghai",
             )
 
             logger.info("Playwright浏览器初始化成功")
@@ -78,7 +82,7 @@ class PosterRenderer:
             logger.error(f"资源清理失败: {e}")
 
     async def _load_template(self, template_name: str) -> str:
-        """加载HTML模板"""
+        """加载HTML模板并处理CSS"""
         template_path = os.path.join(self.template_dir, "templates", template_name)
         if not os.path.exists(template_path):
             raise FileNotFoundError(f"模板文件不存在: {template_path}")
@@ -86,10 +90,42 @@ class PosterRenderer:
         try:
             with open(template_path, "r", encoding="utf-8") as f:
                 template_content = f.read()
+
+            # 内嵌CSS以避免路径问题
+            template_content = self._embed_css(template_content)
+
             return template_content
         except Exception as e:
             logger.error(f"加载模板失败: {e}")
             raise
+
+    def _embed_css(self, template_content: str) -> str:
+        """将CSS文件内容内嵌到HTML中"""
+        import re
+
+        # 查找CSS链接
+        css_pattern = r'<link\s+[^>]*rel=["\']stylesheet["\'][^>]*href=["\']([^"\']+)["\'][^>]*>'
+
+        def replace_css_link(match):
+            href = match.group(1)
+
+            # 构建CSS文件完整路径
+            css_path = os.path.join(self.template_dir, "templates", href)
+
+            try:
+                if os.path.exists(css_path):
+                    with open(css_path, "r", encoding="utf-8") as f:
+                        css_content = f.read()
+                    return f'<style type="text/css">\n{css_content}\n</style>'
+                else:
+                    logger.warning(f"CSS文件不存在: {css_path}")
+                    return match.group(0)  # 保持原始链接
+            except Exception as e:
+                logger.error(f"内嵌CSS失败: {e}")
+                return match.group(0)  # 保持原始链接
+
+        # 替换所有CSS链接
+        return re.sub(css_pattern, replace_css_link, template_content, flags=re.IGNORECASE)
 
     def _render_template_content(self, template_content: str, data: Dict[str, Any]) -> str:
         """增强的模板渲染器，支持更复杂的数据绑定和条件判断"""
@@ -262,10 +298,10 @@ class PosterRenderer:
 
             try:
                 # 设置页面内容
-                await page.set_content(rendered_html, wait_until="networkidle")
+                await page.set_content(rendered_html, wait_until="domcontentloaded")
 
                 # 等待图片加载
-                await page.wait_for_load_state("networkidle", timeout=30000)
+                await page.wait_for_load_state("domcontentloaded", timeout=30000)
 
                 # 获取页面实际高度
                 body_height = await page.evaluate("document.body.scrollHeight")

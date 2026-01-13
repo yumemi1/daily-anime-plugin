@@ -23,10 +23,24 @@ from .cache import PosterCache
 logger = get_logger("poster_generator")
 
 try:
+    # 尝试相对导入
     from ..utils.bangumi_api import BangumiAPIClient
 except ImportError:
-    BangumiAPIClient = None
-    logger.warning("无法导入BangumiAPIClient，剧集信息功能将不可用")
+    try:
+        # 尝试绝对导入
+        from utils.bangumi_api import BangumiAPIClient
+    except ImportError:
+        try:
+            # 最后尝试直接导入
+            import sys
+            import os
+
+            plugin_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            sys.path.insert(0, plugin_dir)
+            from utils.bangumi_api import BangumiAPIClient
+        except ImportError:
+            BangumiAPIClient = None
+            logger.warning("无法导入BangumiAPIClient，剧集信息功能将不可用")
 
 
 class PosterGenerator:
@@ -209,28 +223,7 @@ class PosterGenerator:
             return {}
 
         try:
-            # 使用缓存获取剧集信息
-            from ..utils.cache_manager import cached_get_subject_episodes
-
-            episodes = await cached_get_subject_episodes(subject_id, episode_type=0, cache_ttl=7200)  # 2小时缓存
-
-            if episodes:
-                # 解析最新集数和总集数
-                latest_episode = self._get_latest_episode(episodes)
-                total_episodes = self._get_total_episodes(episodes)
-
-                return {
-                    "latest_episode": latest_episode,
-                    "total_episodes": total_episodes,
-                    "episode_progress": f"{latest_episode}/{total_episodes}",
-                    "update_status": self._get_update_status(episodes),
-                }
-            return {}
-        except Exception as e:
-            logger.warning(f"获取剧集信息失败: {e}")
-            return {}
-
-        try:
+            # 首先尝试获取详细的剧集信息
             async with BangumiAPIClient() as client:
                 episodes = await client.get_subject_episodes(subject_id, episode_type=0)
                 if episodes:
@@ -244,10 +237,79 @@ class PosterGenerator:
                         "episode_progress": f"{latest_episode}/{total_episodes}",
                         "update_status": self._get_update_status(episodes),
                     }
-                return {}
+                else:
+                    logger.info(f"无法获取剧集详情，尝试使用条目详情进行降级处理")
+
         except Exception as e:
-            logger.warning(f"获取剧集信息失败: {e}")
-            return {}
+            logger.info(f"剧集详情API调用失败，使用降级方案: {e}")
+
+        # 降级方案：从条目详情获取剧集信息
+        try:
+            async with BangumiAPIClient() as client:
+                subject_detail = await client.get_subject_detail(subject_id)
+                if subject_detail:
+                    # 从条目详情中提取剧集信息
+                    eps = subject_detail.get("eps", 0)  # 已更新集数
+                    total_episodes = subject_detail.get("total_episodes", 0)  # 总集数
+
+                    # 如果没有总集数信息，尝试从infobox中提取
+                    if total_episodes == 0:
+                        total_episodes = self._extract_episodes_from_infobox(subject_detail.get("infobox", []))
+
+                    # 格式化剧集信息
+                    latest_episode = f"第{eps}话" if eps > 0 else "第1话"
+                    total_eps_str = str(total_episodes) if total_episodes > 0 else "未知"
+                    episode_progress = f"{eps}/{total_eps_str}" if total_episodes > 0 else f"{eps}/?"
+
+                    return {
+                        "latest_episode": latest_episode,
+                        "total_episodes": total_eps_str,
+                        "episode_progress": episode_progress,
+                        "update_status": "📺 连载中" if eps > 0 else "🔄 即将开播",
+                    }
+                else:
+                    logger.warning(f"无法获取条目详情: {subject_id}")
+
+        except Exception as e:
+            logger.warning(f"降级获取剧集信息失败: {e}")
+
+        # 最终降级：返回默认值
+        return {
+            "latest_episode": "第1话",
+            "total_episodes": "?",
+            "episode_progress": "?/?",
+            "update_status": "📺 更新中",
+        }
+
+    def _extract_episodes_from_infobox(self, infobox: List[Dict[str, Any]]) -> int:
+        """从infobox中提取话数信息"""
+        if not infobox:
+            return 0
+
+        try:
+            for item in infobox:
+                if not isinstance(item, dict):
+                    continue
+
+                key = item.get("key", "")
+                value = item.get("value", "")
+
+                if key == "话数" and value:
+                    # 处理话数字段，可能包含"*"或其他字符
+                    if isinstance(value, str):
+                        # 移除非数字字符
+                        import re
+
+                        numbers = re.findall(r"\d+", value)
+                        if numbers:
+                            return int(numbers[0])
+                    elif isinstance(value, (int, float)):
+                        return int(value)
+
+            return 0
+        except Exception as e:
+            logger.warning(f"从infobox提取话数失败: {e}")
+            return 0
 
     def _get_latest_episode(self, episodes: List[Dict[str, Any]]) -> str:
         """获取最新集数"""
