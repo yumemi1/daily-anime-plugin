@@ -134,26 +134,58 @@ class BangumiAPIClient:
             logger.error(f"获取条目详情失败: {str(e)}")
             return None
 
-    async def get_subject_episodes(self, subject_id: int, episode_type: Optional[int] = None) -> List[Dict[str, Any]]:
+    async def get_subject_episodes(
+        self, subject_id: int, episode_type: Optional[int] = None, limit: int = 50, offset: int = 0
+    ) -> List[Dict[str, Any]]:
         """获取条目剧集列表
 
         Args:
             subject_id: 条目ID
-            episode_type: 剧集类型 (0=本篇, 1=SP, 2=OP, 3=ED)
+            episode_type: 剧集类型 (0=本篇, 1=SP, 2=OP, 3=ED, 4=PV, 5=MAD, 6=其他)
+            limit: 返回数量限制，最大200
+            offset: 偏移量
 
         Returns:
             剧集列表
         """
-        params = {}
+        params = {"subject_id": subject_id, "limit": min(limit, 200), "offset": offset}
         if episode_type is not None:
             params["type"] = episode_type
 
         try:
-            data = await self._request("GET", f"/v0/subjects/{subject_id}/episodes", params=params)
+            # 使用正确的端点格式：/v0/episodes?subject_id={id}
+            data = await self._request("GET", "/v0/episodes", params=params)
             return data.get("data", []) if isinstance(data, dict) else []
         except Exception as e:
             logger.error(f"获取剧集列表失败: {str(e)}")
-            return []
+            # 如果episodes端点失败，尝试从subject详情中获取基本信息
+            try:
+                detail = await self.get_subject_detail(subject_id)
+                if detail:
+                    # 从详情中构造基本的剧集信息
+                    eps_count = detail.get("eps_count", 0)
+                    current_eps = detail.get("eps", 0)
+                    if eps_count > 0:
+                        # 返回基本的剧集计数信息
+                        return [
+                            {
+                                "id": subject_id,
+                                "name": detail.get("name", "未知"),
+                                "name_cn": detail.get("name_cn", ""),
+                                "type": 0,  # 假设是本篇
+                                "sort": 1,
+                                "ep": current_eps,
+                                "eps_count": eps_count,
+                                "summary": detail.get("summary", ""),
+                            }
+                        ]
+                return []
+            except Exception as detail_error:
+                logger.error(f"获取剧集详情也失败: {str(detail_error)}")
+                return []
+            except Exception as detail_error:
+                logger.error(f"获取剧集详情也失败: {str(detail_error)}")
+                return []
 
     async def get_user_collection(
         self, user_id: str, subject_type: int = 2, collection_type: Optional[str] = None
