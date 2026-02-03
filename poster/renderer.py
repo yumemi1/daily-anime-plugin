@@ -68,6 +68,7 @@ class PosterRenderer:
 
             self.context = await self.browser.new_context(
                 viewport={"width": 1200, "height": 800},  # 设置基础视口，页面可以超出
+                device_scale_factor=2.0,  # 提高设备像素比，获得更清晰的图片
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
                 # 配置字体支持emoji和中文字符
                 locale="zh-CN",
@@ -319,19 +320,27 @@ class PosterRenderer:
                 # 设置页面内容
                 await page.set_content(rendered_html, wait_until="domcontentloaded")
 
-                # 动态调整视口高度以适应内容
+                # 动态调整视口高度以适应内容，并预加载图片提高质量
                 await page.evaluate("""
                     () => {
-                        // 等待所有图片加载完成后再计算高度
+                        // 预加载所有图片以提高显示质量
                         const images = Array.from(document.images);
                         images.forEach(img => {
                             if (!img.complete) {
                                 img.loading = 'eager';
+                                // 强制图片以高质量显示
+                                img.style.imageRendering = 'crisp-edges';
+                                img.style.imageRendering = '-webkit-optimize-contrast';
                             }
                         });
                         
                         // 强制重新计算布局
                         document.body.offsetHeight;
+                        
+                        // 预热图片渲染
+                        setTimeout(() => {
+                            document.body.offsetHeight;
+                        }, 500);
                     }
                 """)
 

@@ -581,7 +581,8 @@ class PosterGenerator:
             logger.debug(f"番剧 {title} 图片数据: {images}")
 
             if isinstance(images, dict):
-                cover_url = images.get("medium") or images.get("common") or images.get("large", "")
+                # 优先使用大图以获得更好的清晰度
+                cover_url = images.get("large") or images.get("medium") or images.get("common", "")
 
             logger.debug(f"选择的封面URL: {cover_url}")
 
