@@ -23,14 +23,13 @@
                         <div class="cover-placeholder" style="display:none;" aria-hidden="true">
                             <span>暂无封面</span>
                         </div>
-                <div class="episode-badge">{{main_anime.latest_episode}}</div>
+
             </div>
             <div class="featured-info">
                 <h2 id="main-anime-title">{{main_anime.title}}</h2>
                 <div class="meta-info">
                     <span class="score" aria-label="评分">★ {{main_anime.score}}</span>
-                    <span class="watchers" aria-label="追番人数">{{main_anime.watchers}}人追番</span>
-                    <span class="episodes" aria-label="进度">{{main_anime.episode_progress}}</span>
+                    <span class="watchers" aria-label="追番人数">{{main_anime.watchers}}</span>
                 </div>
                 <div class="update-status" data-status-color="{{main_anime.air_status_color}}">
                     {{main_anime.update_status}}
@@ -51,13 +50,12 @@
                 <div class="cover-placeholder" style="display:none;" aria-hidden="true">
                     <span>暂无封面</span>
                 </div>
-                        <div class="card-episode">{{latest_episode}}</div>
+
                     </div>
                     <div class="card-info">
                         <h4>{{title}}</h4>
                         <div class="card-meta">
                             <span class="card-score">★ {{score}}</span>
-                            <span class="card-episodes">{{episode_progress}}</span>
                         </div>
                     </div>
                 </article>
@@ -66,17 +64,7 @@
         </section>
         {{/if}}
 
-        <!-- 未展示的番剧列表 -->
-        {{#if hidden_animes}}
-        <section class="hidden-animes" aria-labelledby="hidden-title">
-            <h4 id="hidden-title" class="hidden-title">
-                还有 {{hidden_count}} 部番剧更新
-            </h4>
-            <div class="hidden-list">
-                <pre class="hidden-text">{{hidden_animes}}</pre>
-            </div>
-        </section>
-        {{/if}}
+
 
         <!-- 空状态 -->
         {{#unless has_animes}}

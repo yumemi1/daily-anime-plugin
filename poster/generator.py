@@ -370,35 +370,9 @@ class PosterGenerator:
         }
 
     async def get_episode_info(self, subject_id: int) -> Dict[str, Any]:
-        """获取剧集信息 - 集成验证器版本"""
-        if BangumiAPIClient is None:
-            logger.warning("BangumiAPIClient不可用，无法获取剧集信息")
-            return self._get_default_episode_info()
-
-        try:
-            # 获取基础数据
-            subject_detail = await self._get_subject_detail_data(subject_id)
-            if not subject_detail:
-                logger.warning(f"无法获取番剧 {subject_id} 的基础数据")
-                return self._get_default_episode_info()
-
-            # 获取剧集列表数据（用于精确计算）
-            episodes_data = await self._get_episodes_data(subject_id)
-
-            # 使用验证器进行验证
-            if validate_anime_episode and EpisodeInfo:
-                try:
-                    episode_info = await validate_anime_episode(subject_detail, episodes_data, strict_mode=True)
-                    return self._convert_episode_info_to_dict(episode_info)
-                except Exception as e:
-                    logger.warning(f"剧集验证失败，降级到原始API数据: {e}")
-
-            # 降级到原始API处理
-            return await self._process_original_episode_data(subject_detail, episodes_data)
-
-        except Exception as e:
-            logger.error(f"获取剧集信息失败: {e}")
-            return self._get_default_episode_info()
+        """获取剧集信息 - 简化版本（不显示集数）"""
+        # 返回默认的空剧集信息
+        return self._get_default_episode_info()
 
     async def _get_subject_detail_data(self, subject_id: int) -> Optional[Dict[str, Any]]:
         """获取番剧基础数据"""
