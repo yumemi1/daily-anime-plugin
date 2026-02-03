@@ -21,16 +21,6 @@ from .renderer import PosterRenderer
 from .cache import PosterCache
 from ..utils.blacklist_manager import get_global_blacklist_manager
 
-# 导入剧集验证器
-try:
-    from ..utils.episode_validator import validate_anime_episode, EpisodeInfo
-except ImportError:
-    try:
-        from utils.episode_validator import validate_anime_episode, EpisodeInfo
-    except ImportError:
-        validate_anime_episode = None
-        EpisodeInfo = None
-        logger.warning("无法导入剧集验证器，将使用原始API数据")
 
 logger = get_logger("poster_generator")
 
