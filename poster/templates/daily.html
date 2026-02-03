@@ -2,74 +2,81 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=2.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="每日新番更新资讯">
     <title>新番资讯</title>
     <link rel="stylesheet" href="minimal-styles.css">
 </head>
 <body class="poster">
     <main class="poster-body">
         <!-- 头部装饰区域 -->
-        <section class="hero-section">
+        <header class="hero-section" aria-label="页面标题">
             <div class="date-badge">{{date}}</div>
             <h1 class="main-title">今日新番更新</h1>
-        </section>
-        
+        </header>
+
         <!-- 主番剧横向卡片 -->
         {{#if main_anime}}
-        <section class="featured-anime">
+        <article class="featured-anime" aria-labelledby="main-anime-title">
             <div class="featured-cover">
-                <img src="{{main_anime.cover_url}}" alt="{{main_anime.title}}" onerror="this.src='https://via.placeholder.com/360x504/667eea/f5f5f5?text=暂无封面'">
+                <img src="{{main_anime.cover_url}}" alt="{{main_anime.title}} 封面" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        <div class="cover-placeholder" style="display:none;" aria-hidden="true">
+                            <span>暂无封面</span>
+                        </div>
                 <div class="episode-badge">{{main_anime.latest_episode}}</div>
             </div>
             <div class="featured-info">
-                <h2>{{main_anime.title}}</h2>
+                <h2 id="main-anime-title">{{main_anime.title}}</h2>
                 <div class="meta-info">
-                    <span class="score">{{main_anime.score}}</span>
-                    <span class="watchers">{{main_anime.watchers}}人追番</span>
-                    <span class="episodes">{{main_anime.episode_progress}}</span>
+                    <span class="score" aria-label="评分">★ {{main_anime.score}}</span>
+                    <span class="watchers" aria-label="追番人数">{{main_anime.watchers}}人追番</span>
+                    <span class="episodes" aria-label="进度">{{main_anime.episode_progress}}</span>
                 </div>
-                <div class="update-status" style="background: {{main_anime.air_status_color}}">
+                <div class="update-status" data-status-color="{{main_anime.air_status_color}}">
                     {{main_anime.update_status}}
                 </div>
             </div>
-        </section>
+        </article>
         {{/if}}
-        
+
         <!-- 其他番剧网格布局 -->
         {{#if other_animes}}
-        <section class="anime-grid">
-            <h3 class="grid-title">今日更多更新</h3>
+        <section class="anime-grid" aria-labelledby="grid-title">
+            <h3 id="grid-title" class="grid-title">今日更多更新</h3>
             <div class="grid-container">
                 {{#each other_animes}}
-                <div class="anime-card">
+                <article class="anime-card">
                     <div class="card-cover">
-                        <img src="{{cover_url}}" alt="{{title}}" onerror="this.src='https://via.placeholder.com/250x320/667eea/f5f5f5?text=暂无封面'">
+                        <img src="{{cover_url}}" alt="{{title}} 封面" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div class="cover-placeholder" style="display:none;" aria-hidden="true">
+                    <span>暂无封面</span>
+                </div>
                         <div class="card-episode">{{latest_episode}}</div>
                     </div>
                     <div class="card-info">
                         <h4>{{title}}</h4>
                         <div class="card-meta">
-                            <span class="card-score">{{score}}</span>
+                            <span class="card-score">★ {{score}}</span>
                             <span class="card-episodes">{{episode_progress}}</span>
                         </div>
                     </div>
-                </div>
+                </article>
                 {{/each}}
             </div>
         </section>
         {{/if}}
-        
+
         <!-- 空状态 -->
         {{#unless has_animes}}
-        <section class="empty-state">
-            <div class="empty-icon">TV</div>
+        <section class="empty-state" role="status" aria-label="无更新">
+            <div class="empty-icon" aria-hidden="true">📺</div>
             <div class="empty-text">今日暂无新番更新</div>
         </section>
         {{/unless}}
-        
+
         <!-- 底部信息 -->
         <footer class="poster-footer">
-            <div class="source">Powered by bgm.tv | 生成于 {{generated_time}}</div>
+            <div class="source">Powered by <a href="https://bgm.tv" target="_blank" rel="noopener noreferrer">bgm.tv</a> | 生成于 {{generated_time}}</div>
         </footer>
     </main>
 </body>

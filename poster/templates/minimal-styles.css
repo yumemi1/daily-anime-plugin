@@ -42,8 +42,9 @@ body {
 .poster {
   width: 800px;
   max-width: 800px;
-  min-height: 1000px;
-  padding: 48px 40px;
+  min-height: auto;
+  height: auto;
+  padding: 36px 40px;
   display: flex;
   flex-direction: column;
   margin: 0 auto;
@@ -86,21 +87,22 @@ body {
 }
 
 .main-title {
-  font-size: 48px;
+  font-size: 40px;
   font-weight: 700;
   color: white;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   margin: 0;
   position: relative;
+  display: inline-block;
 }
 
 .main-title::after {
   content: '';
   position: absolute;
-  bottom: -8px;
+  bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
-  width: 60px;
+  width: 50px;
   height: 3px;
   background: var(--secondary-gradient);
   border-radius: 2px;
@@ -108,29 +110,26 @@ body {
 
 /* 主体内容 */
 .poster-body {
-  flex: 1;
+  flex: none;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 /* 主番剧横向卡片 */
 .featured-anime {
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.95) 0%, 
-    rgba(248, 250, 252, 0.9) 100%);
-  border: 2px solid rgba(102, 126, 234, 0.2);
-  border-radius: 24px;
+  background: var(--card-bg);
+  border: 1px solid rgba(102, 126, 234, 0.15);
+  border-radius: 20px;
   box-shadow: 
-    0 20px 60px rgba(0, 0, 0, 0.1),
+    0 12px 40px rgba(0, 0, 0, 0.12),
     0 0 0 1px rgba(255, 255, 255, 0.1);
-  padding: 40px;
+  padding: 28px;
   display: flex;
-  gap: 32px;
+  gap: 28px;
   position: relative;
-  z-index: 1;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  margin-bottom: 48px;
   overflow: hidden;
 }
 
@@ -171,18 +170,36 @@ body {
 }
 
 .featured-cover {
-  width: 360px;
-  height: 504px;
+  width: 180px;
+  height: 252px;
   flex-shrink: 0;
   position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
 
 .featured-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+}
+
+.cover-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #718096;
+  font-size: 14px;
+  font-weight: 500;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .episode-badge {
@@ -207,32 +224,31 @@ body {
 }
 
 .featured-info h2 {
-  font-size: 42px;
-  font-weight: 800;
+  font-size: 26px;
+  font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 20px 0;
-  line-height: 1.2;
+  margin: 0 0 16px 0;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .meta-info {
   display: flex;
-  gap: 24px;
-  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .score {
   background: linear-gradient(135deg, #ff9500, #ff6200);
   color: white;
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-size: 24px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 16px;
   font-weight: 700;
-  box-shadow: 0 4px 16px rgba(255, 149, 0, 0.4);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 3px 12px rgba(255, 149, 0, 0.35);
+  white-space: nowrap;
 }
 
 .score::before {
@@ -249,31 +265,26 @@ body {
 .episodes {
   background: linear-gradient(135deg, #4299e1, #3182ce);
   color: white;
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-size: 18px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  box-shadow: 0 3px 12px rgba(66, 153, 225, 0.3);
+  white-space: nowrap;
 }
 
 .update-status {
+  background: linear-gradient(135deg, #48bb78, #38a169);
   color: white;
-  padding: 12px 24px;
-  border-radius: 16px;
-  font-size: 18px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 14px;
   font-weight: 700;
-  margin-top: 16px;
   align-self: flex-start;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 6px 20px rgba(72, 187, 120, 0.5);
-  position: relative;
-  overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 16px rgba(72, 187, 120, 0.4);
+  white-space: nowrap;
 }
 
 .update-status::before {
@@ -302,23 +313,26 @@ body {
 }
 
 .grid-title {
-  font-size: 36px;
+  font-size: 24px;
   font-weight: 700;
   color: white;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-  margin: 0 0 32px 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  margin: 0 0 20px 0;
   text-align: center;
   position: relative;
+  display: inline-block;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .grid-title::after {
   content: '';
   position: absolute;
-  bottom: -8px;
+  bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
-  width: 80px;
-  height: 3px;
+  width: 40px;
+  height: 2px;
   background: var(--secondary-gradient);
   border-radius: 2px;
 }
@@ -326,8 +340,7 @@ body {
 .grid-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 32px;
-  max-width: 100%;
+  gap: 20px;
 }
 
 .anime-card {
@@ -376,7 +389,7 @@ body {
 .card-cover {
   position: relative;
   width: 100%;
-  height: 320px;
+  height: 180px;
   overflow: hidden;
 }
 
@@ -393,6 +406,22 @@ body {
   filter: brightness(1.05) contrast(1.05);
 }
 
+.card-cover .cover-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #718096;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 0;
+}
+
 .card-episode {
   position: absolute;
   bottom: 12px;
@@ -407,19 +436,21 @@ body {
 }
 
 .card-info {
-  padding: 24px;
+  padding: 14px 16px;
 }
 
 .card-info h4 {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 12px 0;
-  line-height: 1.3;
+  margin: 0 0 10px 0;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: 42px;
+  word-break: break-word;
 }
 
 .card-meta {
@@ -431,24 +462,23 @@ body {
 }
 
 .card-score {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--score-gold);
-  background: rgba(246, 173, 85, 0.1);
-  padding: 4px 8px;
-  border-radius: 8px;
+  background: rgba(246, 173, 85, 0.12);
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
 }
 
 .card-episodes {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--episode-blue);
   font-weight: 600;
-  background: rgba(66, 153, 225, 0.1);
-  padding: 4px 8px;
-  border-radius: 8px;
+  background: rgba(66, 153, 225, 0.12);
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
 }
 
 /* 新增追番人数样式 - 紫色背景 */
@@ -682,6 +712,40 @@ body {
   .poster-footer {
     color: #666;
   }
+}
+
+/* Weekly模板的cover-wrapper样式 */
+.cover-wrapper {
+  position: relative;
+  width: 140px;
+  height: 196px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.cover-wrapper .cover-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #718096;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 10px;
+}
+
+.cover-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* 暗色主题支持 */

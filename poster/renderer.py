@@ -16,7 +16,7 @@ except ImportError:
     import logging
 
     def get_logger(name):
-        return logging.getLogger(name)
+        return logging.getLogger(name)  # type: ignore
 
 
 logger = get_logger("poster_renderer")
@@ -27,7 +27,7 @@ class PosterRenderer:
 
     def __init__(self, headless: bool = True):
         self.headless = headless
-        self.viewport = {"width": 1200, "height": 1600}
+        self.viewport = {"width": 1200, "height": 800}  # 初始高度较小，后续动态调整
         self.template_dir = os.path.dirname(os.path.abspath(__file__))
         self.browser: Optional[Browser] = None
         self.context: Optional[BrowserContext] = None
@@ -67,7 +67,7 @@ class PosterRenderer:
             )
 
             self.context = await self.browser.new_context(
-                viewport=self.viewport,
+                viewport={"width": 1200, "height": 800},  # 设置基础视口，页面可以超出
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
                 # 配置字体支持emoji和中文字符
                 locale="zh-CN",
@@ -319,6 +319,22 @@ class PosterRenderer:
                 # 设置页面内容
                 await page.set_content(rendered_html, wait_until="domcontentloaded")
 
+                # 动态调整视口高度以适应内容
+                await page.evaluate("""
+                    () => {
+                        // 等待所有图片加载完成后再计算高度
+                        const images = Array.from(document.images);
+                        images.forEach(img => {
+                            if (!img.complete) {
+                                img.loading = 'eager';
+                            }
+                        });
+                        
+                        // 强制重新计算布局
+                        document.body.offsetHeight;
+                    }
+                """)
+
                 # 增强图片加载等待
                 await page.wait_for_load_state("domcontentloaded", timeout=30000)
 
@@ -375,16 +391,39 @@ class PosterRenderer:
 
                 logger.info(f"图片加载状态: {image_status}")
 
-                # 获取页面实际高度
-                body_height = await page.evaluate("document.body.scrollHeight")
-                viewport_height = max(body_height, 960)  # 最小高度
+                # 等待页面完全渲染并计算最终高度
+                await page.wait_for_timeout(2000)  # 额外等待确保渲染完成
 
-                # 截图
+                # 获取精确的内容高度
+                dimensions = await page.evaluate("""
+                    () => {
+                        const poster = document.querySelector('.poster');
+                        const body = document.body;
+                        const html = document.documentElement;
+                        
+                        const posterHeight = poster ? poster.scrollHeight : 0;
+                        const bodyHeight = body.scrollHeight;
+                        const htmlHeight = html.scrollHeight;
+                        
+                        return {
+                            poster: posterHeight,
+                            body: bodyHeight,
+                            html: htmlHeight,
+                            max: Math.max(posterHeight, bodyHeight, htmlHeight)
+                        };
+                    }
+                """)
+
+                final_height = dimensions["max"] + 100  # 添加底部缓冲
+                logger.info(f"内容尺寸计算: {dimensions}, 最终高度: {final_height}px")
+
+                # 生成完整长图截图
                 screenshot = await page.screenshot(
                     type="png",
-                    full_page=False,
-                    clip={"x": 0, "y": 0, "width": self.viewport["width"], "height": viewport_height},
+                    full_page=True,  # 自动截取完整页面高度
                     animations="disabled",
+                    quality=90,  # 设置图片质量
+                    scale="device",  # 使用设备像素比
                 )
 
                 logger.info(f"海报渲染成功，大小: {len(screenshot)} bytes")
@@ -398,20 +437,62 @@ class PosterRenderer:
             raise
 
     async def test_render(self) -> bytes:
-        """测试渲染功能"""
+        """测试渲染功能 - 包含大量内容测试长图生成"""
         test_data = {
             "date": "2026年1月12日",
             "has_animes": True,
             "main_anime": {
-                "title": "黄金神威 最终章",
-                "score": "7.3",
-                "watchers": "825",
-                "air_time": "19:30",
+                "title": "黄金神威 最终章 第四季续作",
+                "score": "8.7",
+                "watchers": "2580人追番",
+                "latest_episode": "第12话",
+                "episode_progress": "12/24",
+                "update_status": "连载中",
                 "cover_url": "https://lain.bgm.tv/pic/cover/m/7c/f1/443106_b4QP3.jpg",
             },
             "other_animes": [
-                {"title": "石纪元 第三季", "score": "8.1", "air_time": "21:00"},
-                {"title": "链锯人 第二季", "score": "8.5", "air_time": "22:30"},
+                {
+                    "title": "石纪元 第三季 新世界篇",
+                    "score": "8.1",
+                    "latest_episode": "第8话",
+                    "episode_progress": "8/12",
+                    "cover_url": "https://lain.bgm.tv/pic/cover/m/7c/f1/443107_b4QP3.jpg",
+                },
+                {
+                    "title": "链锯人 第二季 蕾塞篇",
+                    "score": "8.5",
+                    "latest_episode": "第6话",
+                    "episode_progress": "6/12",
+                    "cover_url": "https://lain.bgm.tv/pic/cover/m/7c/f1/443108_b4QP3.jpg",
+                },
+                {
+                    "title": "咒术回战 第二季 涉谷事变",
+                    "score": "8.9",
+                    "latest_episode": "第15话",
+                    "episode_progress": "15/23",
+                    "cover_url": "https://lain.bgm.tv/pic/cover/m/7c/f1/443109_b4QP3.jpg",
+                },
+                {
+                    "title": "间谍过家家 第二季",
+                    "score": "8.3",
+                    "latest_episode": "第10话",
+                    "episode_progress": "10/12",
+                    "cover_url": "https://lain.bgm.tv/pic/cover/m/7c/f1/443110_b4QP3.jpg",
+                },
+                {
+                    "title": "葬送的芙莉莲",
+                    "score": "9.1",
+                    "latest_episode": "第20话",
+                    "episode_progress": "20/28",
+                    "cover_url": "https://lain.bgm.tv/pic/cover/m/7c/f1/443111_b4QP3.jpg",
+                },
+                {
+                    "title": "药屋少女的呢喃",
+                    "score": "8.0",
+                    "latest_episode": "第18话",
+                    "episode_progress": "18/24",
+                    "cover_url": "https://lain.bgm.tv/pic/cover/m/7c/f1/443112_b4QP3.jpg",
+                },
             ],
             "generated_time": "2026-01-12 16:30",
         }
