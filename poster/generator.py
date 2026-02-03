@@ -331,13 +331,24 @@ class PosterGenerator:
 
             # 每日汇总数据
             day_name = week_days[i] if i < 7 else f"第{i + 1}天"
-            main_anime = ""
+            main_animes = []
             if filtered_items:
-                # 取当天评分最高的番剧作为主推
-                best_anime = max(filtered_items, key=lambda x: x.get("rating", {}).get("score", 0))
-                main_anime = best_anime.get("name_cn") or best_anime.get("name", "未知番剧")
+                # 按评分排序，取前3部番剧
+                sorted_day_animes = sorted(
+                    filtered_items, key=lambda x: x.get("rating", {}).get("score", 0), reverse=True
+                )
+                for anime in sorted_day_animes[:3]:  # 每天最多显示3部
+                    title = anime.get("name_cn") or anime.get("name", "未知番剧")
+                    rating = anime.get("rating", {}).get("score", 0)
+                    if rating > 0:
+                        main_animes.append(f"{title} ({rating:.1f}分)")
+                    else:
+                        main_animes.append(title)
 
-            daily_summary.append({"day": day_name, "count": len(filtered_items), "main": main_anime})
+            # 将多部番剧用换行符连接，或者如果没有番剧则显示空字符串
+            main_text = "\n".join(main_animes) if main_animes else ""
+
+            daily_summary.append({"day": day_name, "count": len(filtered_items), "main": main_text})
 
             # 收集所有番剧
             all_animes.extend(filtered_items)

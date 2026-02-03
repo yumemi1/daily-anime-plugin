@@ -588,17 +588,20 @@ body {
 
 .day-content {
   padding: 16px;
+  min-height: 80px;
 }
 
 .day-main {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 42px;
+  min-height: 56px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* ============================================
