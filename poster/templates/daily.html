@@ -22,18 +22,13 @@
                 <span class="date-badge">{{date}}</span>
                 <span class="update-count">{{total_count}}部更新</span>
             </div>
-            <h1 class="main-title">
-                <span class="title-icon">✨</span>
-                今日新番更新
-                <span class="title-icon">✨</span>
-            </h1>
+            <h1 class="main-title">今日新番更新</h1>
             <p class="hero-subtitle">追番时刻，精彩不停</p>
         </header>
 
         <!-- 主番剧横向卡片 -->
         {{#if main_anime}}
         <article class="featured-anime" aria-labelledby="main-anime-title">
-            <div class="featured-rank">#1</div>
             <div class="featured-cover">
                 <img src="{{main_anime.cover_url}}" alt="{{main_anime.title}} 封面" loading="eager" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                 <div class="cover-placeholder" style="display:none;" aria-hidden="true">
@@ -44,19 +39,10 @@
                     </svg>
                     <span>暂无封面</span>
                 </div>
-                <div class="cover-overlay">
-                    <div class="play-btn" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M8 5v14l11-7z"/>
-                        </svg>
-                    </div>
-                </div>
+
             </div>
             <div class="featured-info">
-                <div class="featured-tags">
-                    <span class="tag tag-primary">主推</span>
-                    {{#if main_anime.is_new}}<span class="tag tag-new">NEW</span>{{/if}}
-                </div>
+
                 <h2 id="main-anime-title" class="featured-title">{{main_anime.title}}</h2>
                 <div class="meta-info">
                     <div class="meta-item meta-score">
@@ -92,7 +78,6 @@
             <div class="grid-container">
                 {{#each other_animes}}
                 <article class="anime-card">
-                    <div class="card-rank">#{{add @index 2}}</div>
                     <div class="card-cover">
                         <img src="{{cover_url}}" alt="{{title}} 封面" loading="eager" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                         <div class="cover-placeholder" style="display:none;" aria-hidden="true">
@@ -102,11 +87,7 @@
                                 <polyline points="21 15 16 10 5 21"/>
                             </svg>
                         </div>
-                        <div class="card-overlay">
-                            <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8 5v14l11-7z"/>
-                            </svg>
-                        </div>
+
                     </div>
                     <div class="card-info">
                         <h4 class="card-title">{{title}}</h4>
@@ -117,7 +98,7 @@
                                 </svg>
                                 {{score}}
                             </span>
-                            {{#if is_new}}<span class="card-tag-new">NEW</span>{{/if}}
+
                         </div>
                     </div>
                 </article>

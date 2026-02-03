@@ -201,24 +201,6 @@ body {
   overflow: hidden;
 }
 
-.featured-rank {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 44px;
-  height: 44px;
-  background: var(--gold-gradient);
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: 800;
-  color: white;
-  box-shadow: 0 4px 16px rgba(246, 211, 101, 0.45);
-  z-index: 2;
-}
-
 .featured-cover {
   width: 220px;
   height: 308px;
@@ -256,37 +238,6 @@ body {
   opacity: 0.5;
 }
 
-.cover-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%);
-}
-
-.play-btn {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 56px;
-  height: 56px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-}
-
-.play-btn svg {
-  width: 26px;
-  height: 26px;
-  fill: #667eea;
-  margin-left: 4px;
-}
-
 .featured-info {
   flex: 1;
   display: flex;
@@ -294,34 +245,6 @@ body {
   justify-content: center;
   gap: 16px;
   padding: 8px 0;
-}
-
-.featured-tags {
-  display: flex;
-  gap: 8px;
-}
-
-.tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.tag-primary {
-  background: var(--primary-gradient);
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
-}
-
-.tag-new {
-  background: var(--new-bg);
-  color: var(--new-red);
-  border: 1px solid rgba(252, 129, 129, 0.3);
 }
 
 .featured-title {
@@ -421,23 +344,6 @@ body {
   position: relative;
 }
 
-.card-rank {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  width: 32px;
-  height: 32px;
-  background: rgba(0, 0, 0, 0.65);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: white;
-  z-index: 2;
-}
-
 .card-cover {
   position: relative;
   width: 100%;
@@ -449,26 +355,6 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.card-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%);
-}
-
-.play-icon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 44px;
-  height: 44px;
-  fill: white;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
 }
 
 .card-info {
@@ -510,18 +396,6 @@ body {
   width: 14px;
   height: 14px;
   fill: currentColor;
-}
-
-.card-tag-new {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  background: var(--new-bg);
-  color: var(--new-red);
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  border: 1px solid rgba(252, 129, 129, 0.3);
 }
 
 /* ============================================
