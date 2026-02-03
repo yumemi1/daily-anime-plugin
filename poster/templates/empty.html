@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="暂无新番更新">
+    <title>暂无新番</title>
+    <link rel="stylesheet" href="minimal-styles.css">
+</head>
+<body class="poster">
+    <main class="poster-body">
+        <!-- 头部装饰区域 -->
+        <header class="hero-section" aria-label="页面标题">
+            <div class="date-badge">{{date}}</div>
+            <h1 class="main-title">{{#if message}}{{message}}{{else}}暂无新番更新{{/if}}</h1>
+        </header>
+
+        <!-- 空状态 -->
+        <section class="empty-state" role="status" aria-label="无更新">
+            <div class="empty-icon" aria-hidden="true">📺</div>
+            <div class="empty-text">{{#if message}}{{message}}{{else}}今日暂无新番更新{{/if}}</div>
+        </section>
+
+        <!-- 底部信息 -->
+        <footer class="poster-footer">
+            <div class="source">Powered by <a href="https://bgm.tv" target="_blank" rel="noopener noreferrer">bgm.tv</a> | 生成于 {{generated_time}}</div>
+        </footer>
+    </main>
+</body>
+</html>

@@ -422,7 +422,6 @@ class PosterRenderer:
                     type="png",
                     full_page=True,  # 自动截取完整页面高度
                     animations="disabled",
-                    quality=90,  # 设置图片质量
                     scale="device",  # 使用设备像素比
                 )
 

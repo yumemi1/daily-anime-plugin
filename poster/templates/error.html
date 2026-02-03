@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="海报生成错误">
+    <title>海报生成错误</title>
+    <link rel="stylesheet" href="minimal-styles.css">
+</head>
+<body class="poster">
+    <main class="poster-body">
+        <!-- 头部装饰区域 -->
+        <header class="hero-section" aria-label="页面标题">
+            <div class="date-badge">{{date}}</div>
+            <h1 class="main-title">海报生成错误</h1>
+        </header>
+
+        <!-- 错误状态 -->
+        <section class="empty-state" role="status" aria-label="错误信息">
+            <div class="empty-icon" aria-hidden="true">⚠️</div>
+            <div class="empty-text">海报生成过程中遇到错误</div>
+            {{#if error_message}}
+            <div class="error-message">{{error_message}}</div>
+            {{/if}}
+            {{#if message}}
+            <div class="error-message">{{message}}</div>
+            {{/if}}
+        </section>
+
+        <!-- 底部信息 -->
+        <footer class="poster-footer">
+            <div class="source">Powered by <a href="https://bgm.tv" target="_blank" rel="noopener noreferrer">bgm.tv</a> | 生成于 {{generated_time}}</div>
+        </footer>
+    </main>
+</body>
+</html>
