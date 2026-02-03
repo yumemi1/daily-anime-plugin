@@ -8,48 +8,88 @@
     <link rel="stylesheet" href="minimal-styles.css">
 </head>
 <body class="poster weekly-poster">
-    <header class="poster-header" aria-label="页面标题">
+    <!-- 装饰背景 -->
+    <div class="bg-decoration" aria-hidden="true">
+        <div class="bg-orb orb-1"></div>
+        <div class="bg-orb orb-2"></div>
+        <div class="bg-orb orb-3"></div>
+    </div>
+
+    <header class="weekly-header" aria-label="页面标题">
         <div class="date-range">{{week_start}} - {{week_end}}</div>
-        <h1>本周新番汇总</h1>
+        <h1 class="weekly-title">本周新番汇总</h1>
+        <p class="weekly-subtitle">一周追番指南</p>
     </header>
 
-    <main class="poster-body">
+    <main class="poster-body weekly-body">
         <!-- 统计信息 -->
         <section class="stats-section" aria-label="统计">
             <div class="stats-card">
-                <div class="stats-number" aria-label="更新数量">{{anime_count}}</div>
-                <div class="stats-label">本周更新</div>
+                <div class="stats-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-number">{{anime_count}}</div>
+                    <div class="stats-label">本周更新</div>
+                </div>
             </div>
         </section>
 
         <!-- 主番剧 -->
         {{#if main_anime}}
-        <article class="main-anime" aria-labelledby="main-title">
-            <div class="cover-wrapper">
-                <img class="cover" src="{{main_anime.cover_url}}" alt="{{main_anime.title}} 封面" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                <div class="cover-placeholder" style="display:none;" aria-hidden="true">
-                    <span>暂无封面</span>
-                </div>
+        <section class="featured-section">
+            <div class="section-header">
+                <h2 class="section-title">本周主推</h2>
+                <div class="section-line"></div>
             </div>
-            <div class="anime-info">
-                <h2 id="main-title">{{main_anime.title}}</h2>
-                <div class="meta">
-                    <span class="time">{{main_anime.time}}</span>
+            <article class="weekly-featured" aria-labelledby="main-title">
+                <div class="cover-wrapper">
+                    <img class="cover" src="{{main_anime.cover_url}}" alt="{{main_anime.title}} 封面" loading="eager" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                    <div class="cover-placeholder" style="display:none;" aria-hidden="true">
+                        <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                            <polyline points="21 15 16 10 5 21"/>
+                        </svg>
+                        <span>暂无封面</span>
+                    </div>
                 </div>
-            </div>
-        </article>
+                <div class="anime-info">
+                    <h2 id="main-title" class="anime-title">{{main_anime.title}}</h2>
+                    <div class="meta">
+                        <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        <span class="time">{{main_anime.time}}</span>
+                    </div>
+                </div>
+            </article>
+        </section>
         {{/if}}
 
         <!-- 每日汇总 -->
         {{#if daily_summary}}
         <section class="daily-summary" aria-labelledby="daily-title">
-            <h3 id="daily-title">每日更新概览</h3>
+            <div class="section-header">
+                <h3 id="daily-title" class="section-title">每日更新概览</h3>
+                <div class="section-line"></div>
+            </div>
             <div class="daily-grid">
                 {{#each daily_summary}}
                 <article class="day-card">
-                    <div class="day-name">{{day}}</div>
-                    <div class="anime-count" aria-label="{{count}}部番剧">{{count}} 部</div>
-                    <div class="main-anime">{{main}}</div>
+                    <div class="day-header">
+                        <div class="day-name">{{day}}</div>
+                        <div class="day-count">{{count}}部</div>
+                    </div>
+                    <div class="day-content">
+                        <div class="day-main">{{main}}</div>
+                    </div>
                 </article>
                 {{/each}}
             </div>
@@ -59,24 +99,36 @@
         <!-- 本周亮点 -->
         {{#if highlights}}
         <section class="highlights" aria-labelledby="highlights-title">
-            <h3 id="highlights-title">本周亮点</h3>
+            <div class="section-header">
+                <h3 id="highlights-title" class="section-title">本周亮点</h3>
+                <div class="section-line"></div>
+            </div>
             <ul class="highlight-list">
                 {{#each highlights}}
-                <li class="highlight-item">{{this}}</li>
+                <li class="highlight-item">
+                    <span class="highlight-dot"></span>
+                    <span class="highlight-text">{{this}}</span>
+                </li>
                 {{/each}}
             </ul>
         </section>
         {{/if}}
 
-
         <!-- 未展示的番剧列表 -->
         {{#if hidden_animes}}
         <section class="hidden-animes" aria-labelledby="hidden-title">
-            <h4 id="hidden-title" class="hidden-title">
-                还有 {{hidden_count}} 部番剧
-            </h4>
-            <div class="hidden-list">
-                <pre class="hidden-text">{{hidden_animes}}</pre>
+            <div class="hidden-header">
+                <h4 id="hidden-title" class="hidden-title">
+                    <svg class="hidden-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    还有 {{hidden_count}} 部番剧
+                </h4>
+            </div>
+            <div class="hidden-content">
+                <div class="hidden-list">
+                    <pre class="hidden-text">{{hidden_animes}}</pre>
+                </div>
             </div>
         </section>
         {{/if}}
@@ -84,14 +136,37 @@
         <!-- 空状态 -->
         {{#unless has_animes}}
         <section class="empty-state" role="status" aria-label="无更新">
-            <div class="empty-icon" aria-hidden="true">📺</div>
-            <div class="empty-text">本周暂无新番更新</div>
+            <div class="empty-illustration">
+                <div class="empty-tv">
+                    <svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="10" y="20" width="100" height="70" rx="8" fill="#e2e8f0"/>
+                        <rect x="20" y="30" width="80" height="50" rx="4" fill="#cbd5e0"/>
+                        <rect x="45" y="90" width="30" height="8" rx="2" fill="#a0aec0"/>
+                        <circle cx="100" cy="30" r="3" fill="#f56565"/>
+                        <path d="M40 55L55 40L70 55" stroke="#a0aec0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M55 40V65" stroke="#a0aec0" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            </div>
+            <h3 class="empty-title">本周暂无新番更新</h3>
+            <p class="empty-desc">下周继续追番~</p>
         </section>
         {{/unless}}
     </main>
 
-    <footer class="poster-footer">
-        <div class="generated-time">生成时间: {{generated_time}}</div>
+    <footer class="poster-footer weekly-footer">
+        <div class="footer-decoration"></div>
+        <div class="source">
+            <span class="source-text">Powered by</span>
+            <a href="https://bgm.tv" target="_blank" rel="noopener noreferrer" class="source-link">
+                <svg class="source-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+                bgm.tv
+            </a>
+            <span class="divider">|</span>
+            <span class="generated-time">{{generated_time}}</span>
+        </div>
     </footer>
 </body>
 </html>

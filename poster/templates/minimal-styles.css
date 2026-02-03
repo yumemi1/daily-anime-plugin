@@ -1,5 +1,5 @@
 /* ============================================
-   每日番剧海报 - 静态渲染样式
+   每日/每周番剧海报 - 静态渲染样式
    用途：无头浏览器截图渲染
    ============================================ */
 
@@ -23,8 +23,6 @@
   
   /* 功能色彩 */
   --score-gold: #f6ad55;
-  --new-red: #fc8181;
-  --new-bg: rgba(252, 129, 129, 0.15);
 }
 
 /* 基础重置 */
@@ -103,18 +101,7 @@ body {
 }
 
 /* ============================================
-   主体内容区
-   ============================================ */
-.poster-body {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  position: relative;
-  z-index: 1;
-}
-
-/* ============================================
-   头部区域
+   每日模板 - 头部区域
    ============================================ */
 .hero-section {
   text-align: center;
@@ -142,8 +129,6 @@ body {
   box-shadow: var(--glass-shadow);
 }
 
-
-
 .update-count {
   display: inline-flex;
   align-items: center;
@@ -162,15 +147,7 @@ body {
   color: white;
   text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
   letter-spacing: -0.5px;
-}
-
-.title-icon {
-  font-size: 32px;
 }
 
 .hero-subtitle {
@@ -182,7 +159,57 @@ body {
 }
 
 /* ============================================
-   主推番剧卡片
+   每周模板 - 头部区域
+   ============================================ */
+.weekly-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.date-range {
+  display: inline-flex;
+  align-items: center;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  box-shadow: var(--glass-shadow);
+  margin-bottom: 20px;
+}
+
+.weekly-title {
+  font-size: 44px;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.weekly-subtitle {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 12px;
+  font-weight: 400;
+  letter-spacing: 2px;
+}
+
+/* ============================================
+   主体内容区
+   ============================================ */
+.poster-body {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   每日模板 - 主推番剧卡片
    ============================================ */
 .featured-anime {
   background: var(--glass-bg);
@@ -297,7 +324,7 @@ body {
 }
 
 /* ============================================
-   番剧网格区域
+   每日模板 - 番剧网格区域
    ============================================ */
 .anime-grid {
   margin-top: 8px;
@@ -310,7 +337,7 @@ body {
   margin-bottom: 24px;
 }
 
-.grid-title {
+.grid-title, .section-title {
   font-size: 22px;
   font-weight: 700;
   color: white;
@@ -331,7 +358,6 @@ body {
   gap: 20px;
 }
 
-/* 番剧卡片 */
 .anime-card {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -396,7 +422,235 @@ body {
 }
 
 /* ============================================
-   隐藏番剧列表
+   每周模板 - 统计信息
+   ============================================ */
+.stats-section {
+  display: flex;
+  justify-content: center;
+}
+
+.stats-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 24px 40px;
+  box-shadow: var(--glass-shadow);
+}
+
+.stats-icon {
+  width: 56px;
+  height: 56px;
+  color: var(--text-accent);
+}
+
+.stats-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.stats-content {
+  text-align: left;
+}
+
+.stats-number {
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.stats-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+/* ============================================
+   每周模板 - 主推番剧
+   ============================================ */
+.featured-section {
+  margin-top: 8px;
+}
+
+.weekly-featured {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 28px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+  padding: 32px;
+  display: flex;
+  gap: 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.weekly-featured .cover-wrapper {
+  width: 200px;
+  height: 280px;
+  flex-shrink: 0;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.weekly-featured .cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.weekly-featured .anime-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+
+.weekly-featured .anime-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+}
+
+.weekly-featured .meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+  color: #0369a1;
+  border-radius: 14px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.weekly-featured .meta-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.weekly-featured .time {
+  font-size: 15px;
+}
+
+/* ============================================
+   每周模板 - 每日汇总
+   ============================================ */
+.daily-summary {
+  margin-top: 8px;
+}
+
+.daily-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.day-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--glass-shadow);
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--primary-gradient);
+  color: white;
+}
+
+.day-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.day-count {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+}
+
+.day-content {
+  padding: 16px;
+}
+
+.day-main {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 42px;
+}
+
+/* ============================================
+   每周模板 - 本周亮点
+   ============================================ */
+.highlights {
+  margin-top: 8px;
+}
+
+.highlight-list {
+  list-style: none;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--glass-shadow);
+}
+
+.highlight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.highlight-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.highlight-item:first-child {
+  padding-top: 0;
+}
+
+.highlight-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--secondary-gradient);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.highlight-text {
+  font-size: 15px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* ============================================
+   隐藏番剧列表（通用）
    ============================================ */
 .hidden-animes {
   background: var(--glass-bg);
@@ -473,7 +727,6 @@ body {
   overflow-y: auto;
 }
 
-/* 静态滚动条 */
 .hidden-text::-webkit-scrollbar {
   width: 6px;
 }
@@ -489,7 +742,7 @@ body {
 }
 
 /* ============================================
-   空状态
+   空状态（通用）
    ============================================ */
 .empty-state {
   background: var(--glass-bg);
@@ -517,14 +770,6 @@ body {
   height: 100%;
 }
 
-.empty-zZZ {
-  position: absolute;
-  top: 0;
-  right: 0;
-  font-size: 28px;
-  opacity: 0.7;
-}
-
 .empty-title {
   font-size: 22px;
   font-weight: 700;
@@ -538,7 +783,7 @@ body {
 }
 
 /* ============================================
-   页脚
+   页脚（通用）
    ============================================ */
 .poster-footer {
   margin-top: 16px;
@@ -597,6 +842,83 @@ body {
 }
 
 /* ============================================
+   响应式设计
+   ============================================ */
+@media (max-width: 840px) {
+  .poster {
+    width: 100%;
+    padding: 32px 24px;
+  }
+  
+  .main-title,
+  .weekly-title {
+    font-size: 32px;
+  }
+  
+  .featured-anime,
+  .weekly-featured {
+    flex-direction: column;
+    padding: 24px;
+  }
+  
+  .featured-cover,
+  .weekly-featured .cover-wrapper {
+    width: 180px;
+    height: 252px;
+    margin: 0 auto;
+  }
+  
+  .featured-info,
+  .weekly-featured .anime-info {
+    text-align: center;
+    align-items: center;
+  }
+  
+  .featured-title,
+  .weekly-featured .anime-title {
+    font-size: 22px;
+  }
+  
+  .grid-container {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .card-cover {
+    height: 220px;
+  }
+  
+  .daily-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .main-title,
+  .weekly-title {
+    font-size: 26px;
+  }
+  
+  .featured-cover,
+  .weekly-featured .cover-wrapper {
+    width: 160px;
+    height: 224px;
+  }
+  
+  .daily-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-card {
+    padding: 20px 28px;
+  }
+  
+  .stats-number {
+    font-size: 36px;
+  }
+}
+
+/* ============================================
    Weekly模板兼容样式
    ============================================ */
 .cover-wrapper {
@@ -623,8 +945,10 @@ body {
   height: 100%;
   background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   color: #718096;
   font-size: 14px;
   font-weight: 500;
