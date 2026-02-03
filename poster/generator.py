@@ -168,9 +168,9 @@ class PosterGenerator:
             # 准备周报模板数据
             template_data = await self._prepare_weekly_data(calendar_data)
 
-            # 使用周报模板（这里先用daily模板简化）
+            # 使用周报模板
             async with PosterRenderer() as renderer:
-                image_bytes = await renderer.render_poster(template_data, "daily.html")
+                image_bytes = await renderer.render_poster(template_data, "weekly.html")
 
             # 保存到缓存
             metadata = {

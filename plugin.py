@@ -551,7 +551,7 @@ class WeeklyPosterCommand(BaseCommand):
 
                 # 构建图片标题
                 week_range = poster_result.get("week_range", "")
-                title = f"🗓️ 本周新番汇总海报 - {week_range}"
+                title = f"本周新番汇总海报 {week_range}"
 
                 # 先发送标题文本，再发送图片
                 await self.send_text(title)
@@ -581,90 +581,6 @@ class WeeklyPosterCommand(BaseCommand):
             error_msg = f"周报海报生成出错，请稍后重试：{str(e)}"
             await self.send_text(error_msg)
             return False, error_msg, False
-
-
-# ===== Action组件 =====
-
-
-class AnimeInfoAction(BaseAction):
-    """智能响应新番相关询问"""
-
-    action_name = "anime_info_response"
-    action_description = "智能响应用户的新番相关询问"
-    activation_type = ActionActivationType.ALWAYS
-
-    action_parameters = {"user_question": "用户关于新番的问题", "context": "对话上下文信息"}
-    action_require = [
-        "用户询问新番、动漫、番剧相关信息时使用",
-        "用户想了解今日或本周新番更新时使用",
-        "用户搜索特定番剧信息时使用",
-        "用户询问番剧详情时使用",
-    ]
-    associated_types = ["text"]
-
-    async def execute(self) -> Tuple[bool, str]:
-        """执行智能响应新番询问"""
-        try:
-            user_question = self.action_data.get("user_question", "")
-            context = self.action_data.get("context", "")
-
-            # 分析用户意图
-            question_lower = user_question.lower()
-
-            if any(keyword in question_lower for keyword in ["今天", "今日", "daily"]):
-                # 获取今日新番
-                info = await get_today_anime_info()
-                await self.send_text(info)
-                return True, "响应了今日新番询问"
-
-            elif any(keyword in question_lower for keyword in ["本周", "week", "星期"]):
-                # 获取本周新番
-                calendar_data = await cached_get_calendar()
-                if calendar_data:
-                    formatted_info = BangumiDataFormatter.format_calendar_info(calendar_data)
-                    week_info = f"📺 本周新番汇总\n{formatted_info}"
-                    await self.send_text(week_info)
-                    return True, "响应了本周新番询问"
-                else:
-                    await self.send_text("获取本周新番信息失败，请稍后重试")
-                    return False, "获取本周新番信息失败"
-
-            elif any(keyword in question_lower for keyword in ["搜索", "search", "找"]):
-                # 尝试提取搜索关键词
-                import re
-
-                # 简单的关键词提取
-                keyword_match = re.search(r'["""](.+?)["""]|搜索\s*(.+?)$|找\s*(.+?)$', user_question)
-                keyword = None
-                if keyword_match:
-                    keyword = keyword_match.group(1) or keyword_match.group(2) or keyword_match.group(3)
-                    keyword = keyword.strip()
-
-                if keyword:
-                    # 搜索番剧
-                    search_results = await cached_search_subject(keyword, type_filter="anime", limit=5)
-                    if search_results:
-                        formatted_results = BangumiDataFormatter.format_search_results(search_results, keyword)
-                        await self.send_text(formatted_results)
-                        return True, f"搜索了番剧: {keyword}"
-                    else:
-                        await self.send_text(f"未找到与「{keyword}」相关的番剧")
-                        return True, f"未找到番剧: {keyword}"
-                else:
-                    await self.send_text("请告诉我您想搜索哪部番剧")
-                    return True, "请求搜索关键词"
-
-            else:
-                # 通用新番信息响应（今天的新番）
-                info = await get_today_anime_info()
-                await self.send_text(f"关于新番信息，我为您整理了以下内容：\n\n{info}")
-                return True, "响应了通用新番询问"
-
-        except Exception as e:
-            logger.error(f"智能响应新番询问失败: {str(e)}")
-            error_msg = f"处理您的新番询问时发生错误: {str(e)}"
-            await self.send_text(error_msg)
-            return False, f"响应失败: {str(e)}"
 
 
 # ===== EventHandler组件 =====
@@ -1038,8 +954,6 @@ class DailyAnimePlugin(BasePlugin):
             (AnimeSearchCommand.get_command_info(), AnimeSearchCommand),
             (AnimePosterCommand.get_command_info(), AnimePosterCommand),
             (WeeklyPosterCommand.get_command_info(), WeeklyPosterCommand),
-            # Action组件
-            (AnimeInfoAction.get_action_info(), AnimeInfoAction),
             # EventHandler组件
             (DailyPushEventHandler.get_handler_info(), DailyPushEventHandler),
             (PluginStopEventHandler.get_handler_info(), PluginStopEventHandler),
