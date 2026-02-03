@@ -354,29 +354,28 @@ class PosterRenderer:
                     }
                 """)
 
-                # 等待所有图片加载完成，带重试
-                max_image_retries = 2
-                for retry in range(max_image_retries):
-                    try:
-                        await page.wait_for_function(
-                            """() => {
-                                const images = Array.from(document.images);
-                                const loaded = images.filter(img => img.complete && img.naturalHeight > 0);
-                                const failed = images.filter(img => img.naturalHeight === 0);
-                                console.log(`图片状态: 已加载 ${loaded.length}/${images.length}, 失败 ${failed.length}`);
-                                return loaded.length >= Math.ceil(images.length * 0.8) || // 80%加载成功
-                                       images.length === 0; // 没有图片
-                            }""",
-                            timeout=10000,
-                        )
-                        logger.info(f"图片加载完成 (重试 {retry + 1})")
-                        break
-                    except Exception as e:
-                        if retry < max_image_retries - 1:
-                            logger.warning(f"图片加载重试 {retry + 1}/{max_image_retries}: {e}")
-                            await page.wait_for_timeout(2000)  # 等待2秒再重试
-                        else:
-                            logger.warning(f"图片加载最终超时，继续渲染: {e}")
+                # 等待图片加载，但更宽容失败情况
+                try:
+                    await page.wait_for_function(
+                        """() => {
+                            const images = Array.from(document.images);
+                            if (images.length === 0) return true; // 没有图片
+                            
+                            const loaded = images.filter(img => img.complete && img.naturalHeight > 0);
+                            const loading = images.filter(img => !img.complete);
+                            const failed = images.filter(img => img.naturalHeight === 0 && img.complete);
+                            
+                            console.log(`图片状态: 总数${images.length}, 已加载${loaded.length}, 加载中${loading.length}, 失败${failed.length}`);
+                            
+                            // 至少50%图片加载完成，或者所有图片都处理完成（成功或失败）
+                            return loaded.length >= Math.ceil(images.length * 0.5) || 
+                                   (loading.length === 0 && (loaded.length > 0 || failed.length > 0));
+                        }""",
+                        timeout=15000,
+                    )
+                    logger.info("图片加载检查完成")
+                except Exception as e:
+                    logger.warning(f"图片加载等待超时，继续渲染: {e}")
 
                 # 检查并记录图片加载状态
                 image_status = await page.evaluate("""

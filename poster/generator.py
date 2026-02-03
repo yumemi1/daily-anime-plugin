@@ -204,18 +204,31 @@ class PosterGenerator:
 
     async def _prepare_daily_data(self, calendar_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """准备每日海报数据"""
-        today = datetime.now().weekday()  # 0=周日, 1=周一...
+        today = datetime.now().weekday()  # 0=周一, 1=周二, ..., 6=周日
         today_name = datetime.now().strftime("%Y年%m月%d日")
+
+        logger.info(f"准备今日({today} = {['周一', '周二', '周三', '周四', '周五', '周六', '周日'][today]})的新番数据")
 
         # 找到今天的番剧
         today_animes = []
-        for day_info in calendar_data:
-            if day_info.get("weekday", {}).get("id") == today:
+        logger.info(f"查找今日(weekday={today})的番剧，共{len(calendar_data)}天的数据")
+
+        for i, day_info in enumerate(calendar_data):
+            weekday_info = day_info.get("weekday", {})
+            day_id = weekday_info.get("id")
+            day_name = weekday_info.get("cn", weekday_info.get("en", "未知"))
+            items_count = len(day_info.get("items", []))
+
+            logger.info(f"第{i}天: id={day_id}, 名称={day_name}, 番剧数={items_count}")
+
+            if day_id == today:
                 today_animes = day_info.get("items", [])
+                logger.info(f"找到今日番剧: {len(today_animes)}部")
                 break
 
         if not today_animes:
             # 没有今日番剧
+            logger.warning(f"今日({today})没有找到番剧数据")
             return {
                 "date": today_name,
                 "has_animes": False,
