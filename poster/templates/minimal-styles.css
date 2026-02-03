@@ -1,194 +1,238 @@
-/* 现代新番资讯海报样式 */
+/* ============================================
+   每日番剧海报 - 静态渲染样式
+   用途：无头浏览器截图渲染
+   ============================================ */
+
 :root {
-  /* 主色调 - 紫蓝渐变 */
+  /* 主色调 - 梦幻紫蓝渐变 */
   --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --gold-gradient: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
   
-  /* 卡片和背景 */
-  --card-bg: rgba(255, 255, 255, 0.95);
-  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  --card-border: rgba(255, 255, 255, 0.18);
+  /* 玻璃拟态 */
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   
   /* 文字颜色 */
-  --text-primary: #2d3748;
-  --text-secondary: #718096;
-  --text-accent: #805ad5;
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --text-accent: #667eea;
   
   /* 功能色彩 */
   --score-gold: #f6ad55;
-  --episode-blue: #4299e1;
-  --success-green: #48bb78;
+  --new-red: #fc8181;
+  --new-bg: rgba(252, 129, 129, 0.15);
 }
 
-* {
+/* 基础重置 */
+*, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* 字体设置 */
 body {
   font-family: 
-    "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji",
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
-    "Helvetica Neue", Arial, "Noto Sans SC", "Microsoft YaHei", 
-    "PingFang SC", "Hiragino Sans GB", "Source Han Sans SC", 
-    "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC",
+    "Microsoft YaHei", sans-serif;
   line-height: 1.6;
   color: var(--text-primary);
   background: var(--primary-gradient);
   min-height: 100vh;
 }
 
+/* ============================================
+   海报容器
+   ============================================ */
 .poster {
   width: 800px;
   max-width: 800px;
-  min-height: auto;
-  height: auto;
-  padding: 36px 40px;
-  display: flex;
-  flex-direction: column;
+  padding: 48px 44px;
   margin: 0 auto;
   position: relative;
+  overflow: hidden;
 }
 
-.poster::before {
-  content: '';
-  position: absolute;
+/* 装饰背景 - 静态 */
+.bg-decoration {
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
-    radial-gradient(circle at 20% 20%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 50% 50%, rgba(240, 147, 251, 0.05) 0%, transparent 50%);
   pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
 }
 
-/* 头部装饰区域 */
-.hero-section {
-  text-align: center;
-  margin-bottom: 40px;
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+}
+
+.orb-1 {
+  width: 400px;
+  height: 400px;
+  background: rgba(255, 255, 255, 0.3);
+  top: -100px;
+  right: -100px;
+}
+
+.orb-2 {
+  width: 300px;
+  height: 300px;
+  background: rgba(240, 147, 251, 0.25);
+  bottom: -50px;
+  left: -50px;
+}
+
+.orb-3 {
+  width: 200px;
+  height: 200px;
+  background: rgba(79, 172, 254, 0.15);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ============================================
+   主体内容区
+   ============================================ */
+.poster-body {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
   position: relative;
   z-index: 1;
+}
+
+/* ============================================
+   头部区域
+   ============================================ */
+.hero-section {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .date-badge {
-  display: inline-block;
-  background: var(--card-bg);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--card-border);
-  border-radius: 20px;
-  padding: 8px 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 10px 20px;
   font-size: 14px;
+  font-weight: 600;
   color: var(--text-secondary);
-  margin-bottom: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--glass-shadow);
+}
+
+.date-badge::before {
+  content: '📅';
+  font-size: 14px;
+}
+
+.update-count {
+  display: inline-flex;
+  align-items: center;
+  background: var(--secondary-gradient);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(245, 87, 108, 0.35);
 }
 
 .main-title {
-  font-size: 40px;
-  font-weight: 700;
+  font-size: 44px;
+  font-weight: 800;
   color: white;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   margin: 0;
-  position: relative;
-  display: inline-block;
-}
-
-.main-title::after {
-  content: '';
-  position: absolute;
-  bottom: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 50px;
-  height: 3px;
-  background: var(--secondary-gradient);
-  border-radius: 2px;
-}
-
-/* 主体内容 */
-.poster-body {
-  flex: none;
   display: flex;
-  flex-direction: column;
-  gap: 24px;
-  position: relative;
-  z-index: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  letter-spacing: -0.5px;
 }
 
-/* 主番剧横向卡片 */
+.title-icon {
+  font-size: 32px;
+}
+
+.hero-subtitle {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 12px;
+  font-weight: 400;
+  letter-spacing: 2px;
+}
+
+/* ============================================
+   主推番剧卡片
+   ============================================ */
 .featured-anime {
-  background: var(--card-bg);
-  border: 1px solid rgba(102, 126, 234, 0.15);
-  border-radius: 20px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 28px;
   box-shadow: 
-    0 12px 40px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
-  padding: 28px;
+    0 20px 60px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+  padding: 32px;
   display: flex;
-  gap: 28px;
+  gap: 32px;
   position: relative;
   overflow: hidden;
 }
 
-.featured-anime::before {
-  content: '';
+.featured-rank {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--primary-gradient);
-}
-
-.featured-anime:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: 
-    0 32px 100px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(102, 126, 234, 0.3);
-  border-color: rgba(102, 126, 234, 0.4);
-}
-
-.featured-anime::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.05) 100%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
-  border-radius: 24px;
-}
-
-.featured-anime:hover::after {
-  opacity: 1;
+  top: 20px;
+  left: 20px;
+  width: 44px;
+  height: 44px;
+  background: var(--gold-gradient);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: white;
+  box-shadow: 0 4px 16px rgba(246, 211, 101, 0.45);
+  z-index: 2;
 }
 
 .featured-cover {
-  width: 240px;
-  height: 336px;
+  width: 220px;
+  height: 308px;
   flex-shrink: 0;
   position: relative;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
 }
 
 .featured-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 .cover-placeholder {
@@ -199,25 +243,48 @@ body {
   height: 100%;
   background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 12px;
   color: #718096;
-  font-size: 14px;
-  font-weight: 500;
-  border-radius: 16px;
 }
 
-.episode-badge {
+.placeholder-icon {
+  width: 48px;
+  height: 48px;
+  opacity: 0.5;
+}
+
+.cover-overlay {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  background: var(--episode-blue);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%);
+}
+
+.play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.play-btn svg {
+  width: 26px;
+  height: 26px;
+  fill: #667eea;
+  margin-left: 4px;
 }
 
 .featured-info {
@@ -225,121 +292,117 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding-left: 8px;
+  gap: 16px;
+  padding: 8px 0;
 }
 
-.featured-info h2 {
-  font-size: 26px;
+.featured-tags {
+  display: flex;
+  gap: 8px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tag-primary {
+  background: var(--primary-gradient);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}
+
+.tag-new {
+  background: var(--new-bg);
+  color: var(--new-red);
+  border: 1px solid rgba(252, 129, 129, 0.3);
+}
+
+.featured-title {
+  font-size: 28px;
+  font-weight: 800;
   color: var(--text-primary);
-  margin: 0 0 16px 0;
-  line-height: 1.35;
-  word-break: break-word;
-  overflow-wrap: break-word;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
 }
 
 .meta-info {
   display: flex;
+  gap: 16px;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
 }
 
-.score {
-  background: linear-gradient(135deg, #ff9500, #ff6200);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 700;
-  box-shadow: 0 3px 12px rgba(255, 149, 0, 0.35);
-  white-space: nowrap;
-}
-
-.score::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
-  pointer-events: none;
-}
-
-.episodes {
-  background: linear-gradient(135deg, #4299e1, #3182ce);
-  color: white;
-  padding: 6px 14px;
-  border-radius: 10px;
-  font-size: 14px;
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 14px;
   font-weight: 600;
-  box-shadow: 0 3px 12px rgba(66, 153, 225, 0.3);
-  white-space: nowrap;
 }
 
-.update-status {
-  background: linear-gradient(135deg, #48bb78, #38a169);
-  color: white;
-  padding: 10px 20px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 700;
-  align-self: flex-start;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 4px 16px rgba(72, 187, 120, 0.4);
-  white-space: nowrap;
+.meta-score {
+  background: linear-gradient(135deg, #fff5eb 0%, #ffe4cc 100%);
+  color: #c05621;
 }
 
-.update-status::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
-  pointer-events: none;
+.meta-watchers {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  color: #7c3aed;
 }
 
-.update-status:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(72, 187, 120, 0.6);
+.meta-icon {
+  width: 18px;
+  height: 18px;
 }
 
-/* 其他番剧网格布局 */
+.meta-value {
+  font-size: 15px;
+}
+
+.featured-summary {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ============================================
+   番剧网格区域
+   ============================================ */
 .anime-grid {
-  margin-top: 48px;
-  padding-top: 32px;
-  border-top: 2px dashed rgba(255, 255, 255, 0.2);
-  position: relative;
-  z-index: 1;
+  margin-top: 8px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .grid-title {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   color: white;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  margin: 0 0 20px 0;
-  text-align: center;
-  position: relative;
-  display: inline-block;
-  left: 50%;
-  transform: translateX(-50%);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
 }
 
-.grid-title::after {
-  content: '';
-  position: absolute;
-  bottom: -6px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
+.section-line {
+  flex: 1;
   height: 2px;
-  background: var(--secondary-gradient);
-  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.5) 0%, transparent 100%);
+  border-radius: 1px;
 }
 
 .grid-container {
@@ -348,53 +411,37 @@ body {
   gap: 20px;
 }
 
+/* 番剧卡片 */
 .anime-card {
-  background: var(--card-bg);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--card-border);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: var(--card-shadow);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
+  box-shadow: var(--glass-shadow);
   position: relative;
 }
 
-.anime-card::before {
-  content: '';
+.card-rank {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 100%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
-  border-radius: 20px;
-}
-
-.anime-card:hover {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 
-    0 20px 60px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
-  border-color: rgba(102, 126, 234, 0.3);
-}
-
-.anime-card:hover::before {
-  opacity: 1;
-}
-
-.anime-card:active {
-  transform: translateY(-4px) scale(1.01);
-  transition: all 0.2s ease;
+  top: 12px;
+  left: 12px;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.65);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  z-index: 2;
 }
 
 .card-cover {
   position: relative;
   width: 100%;
-  height: 240px;
+  height: 200px;
   overflow: hidden;
 }
 
@@ -402,350 +449,299 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  filter: brightness(0.95);
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
 }
 
-.anime-card:hover .card-cover img {
-  transform: scale(1.08) rotate(1deg);
-  filter: brightness(1.05) contrast(1.05);
-}
-
-.card-cover .cover-placeholder {
+.card-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #718096;
-  font-size: 14px;
-  font-weight: 500;
-  border-radius: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%);
 }
 
-.card-episode {
+.play-icon {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
-  background: var(--episode-blue);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(66, 153, 225, 0.3);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  fill: white;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
 }
 
 .card-info {
-  padding: 14px 16px;
+  padding: 16px;
 }
 
-.card-info h4 {
+.card-title {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 10px 0;
+  margin: 0 0 12px 0;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 42px;
-  word-break: break-word;
 }
 
 .card-meta {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  justify-content: space-between;
 }
 
 .card-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 14px;
   font-weight: 700;
-  color: var(--score-gold);
-  background: rgba(246, 173, 85, 0.12);
-  padding: 4px 10px;
-  border-radius: 6px;
-  white-space: nowrap;
+  color: #c05621;
+  background: linear-gradient(135deg, #fff5eb 0%, #ffe4cc 100%);
+  padding: 6px 12px;
+  border-radius: 10px;
 }
 
-.card-episodes {
-  font-size: 12px;
-  color: var(--episode-blue);
-  font-weight: 600;
-  background: rgba(66, 153, 225, 0.12);
-  padding: 4px 10px;
-  border-radius: 6px;
-  white-space: nowrap;
+.score-icon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
 }
 
-/* 新增追番人数样式 - 紫色背景 */
-.watchers {
+.card-tag-new {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: var(--new-bg);
+  color: var(--new-red);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid rgba(252, 129, 129, 0.3);
+}
+
+/* ============================================
+   隐藏番剧列表
+   ============================================ */
+.hidden-animes {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--glass-shadow);
+}
+
+.hidden-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.hidden-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.hidden-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--text-accent);
+}
+
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
-  font-size: 18px;
-  font-weight: 600;
+  padding: 8px 14px;
+  background: var(--primary-gradient);
   color: white;
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  padding: 8px 16px;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  position: relative;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.toggle-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.hidden-content {
+  max-height: 250px;
   overflow: hidden;
 }
 
-.watchers::before {
-  content: '';
+.hidden-list {
+  padding: 16px 20px;
+}
+
+.hidden-text {
+  font-family: "SF Mono", Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--text-muted);
+  background: rgba(248, 250, 252, 0.8);
+  padding: 16px;
+  border-radius: 12px;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* 静态滚动条 */
+.hidden-text::-webkit-scrollbar {
+  width: 6px;
+}
+
+.hidden-text::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 3px;
+}
+
+.hidden-text::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+/* ============================================
+   空状态
+   ============================================ */
+.empty-state {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 28px;
+  padding: 60px 40px;
+  box-shadow: var(--glass-shadow);
+  text-align: center;
+}
+
+.empty-illustration {
+  position: relative;
+  width: 140px;
+  height: 120px;
+  margin: 0 auto 24px;
+}
+
+.empty-tv {
+  width: 100%;
+  height: 100%;
+}
+
+.empty-tv svg {
+  width: 100%;
+  height: 100%;
+}
+
+.empty-zZZ {
   position: absolute;
   top: 0;
-  left: 0;
   right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
-  pointer-events: none;
+  font-size: 28px;
+  opacity: 0.7;
 }
 
-/* 空状态 */
-.empty-state {
-  background: var(--card-bg);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--card-border);
-  border-radius: 16px;
-  padding: 60px 32px;
-  box-shadow: var(--card-shadow);
-  text-align: center;
-  position: relative;
-  z-index: 1;
+.empty-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
 }
 
-.empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
-  opacity: 0.6;
+.empty-desc {
+  font-size: 15px;
+  color: var(--text-muted);
 }
 
-.empty-text {
-  font-size: 18px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.error-message {
-  margin-top: 16px;
-  padding: 12px 16px;
-  background: rgba(245, 101, 101, 0.1);
-  border: 1px solid rgba(245, 101, 101, 0.2);
-  border-radius: 8px;
-  color: #dc2626;
-  font-size: 14px;
-  font-weight: 500;
-  text-align: left;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-/* 底部 */
+/* ============================================
+   页脚
+   ============================================ */
 .poster-footer {
-  margin-top: 40px;
-  text-align: center;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
+  margin-top: 16px;
+  padding-top: 24px;
   position: relative;
-  z-index: 1;
-  padding: 16px;
+  text-align: center;
+}
+
+.footer-decoration {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: var(--secondary-gradient);
+  border-radius: 2px;
 }
 
 .source {
-  font-weight: 600;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
 }
 
-/* 响应式设计优化 */
-/* 桌面端 - 严格的2x2布局 */
-@media (min-width: 1200px) {
-  .poster {
-    width: 800px;
-    padding: 56px 48px;
-  }
-  
-  .grid-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 36px;
-  }
-  
-  .featured-cover {
-    width: 320px;
-    height: 448px;
-  }
-  
-  .card-cover {
-    height: 300px;
-  }
+.source-text {
+  opacity: 0.85;
 }
 
-/* 平板端 - 保持2列但调整间距 */
-@media (max-width: 1199px) and (min-width: 768px) {
-  .poster {
-    width: 100%;
-    max-width: 800px;
-    padding: 40px 32px;
-  }
-  
-  .grid-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 28px;
-  }
-  
-  .featured-cover {
-    width: 280px;
-    height: 392px;
-  }
-  
-  .card-cover {
-    height: 260px;
-  }
-  
-  .featured-anime {
-    flex-direction: column;
-    text-align: center;
-    padding: 32px;
-  }
-  
-  .featured-info h2 {
-    font-size: 32px;
-  }
+.source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
 }
 
-/* 移动端 - 单列布局 */
-@media (max-width: 767px) {
-  .poster {
-    width: 100%;
-    padding: 32px 24px;
-    min-height: auto;
-  }
-  
-  .main-title {
-    font-size: 32px;
-  }
-  
-  .featured-anime {
-    flex-direction: column;
-    text-align: center;
-    padding: 24px;
-    gap: 24px;
-  }
-  
-  .featured-cover {
-    width: 240px;
-    height: 336px;
-    margin: 0 auto;
-  }
-  
-  .featured-info h2 {
-    font-size: 28px;
-  }
-  
-  .grid-container {
-    grid-template-columns: 1fr;
-    gap: 24px;
-    max-width: 400px;
-    margin: 0 auto;
-  }
-  
-  .card-cover {
-    height: 220px;
-  }
-  
-  .card-info h4 {
-    font-size: 16px;
-  }
+.source-icon {
+  width: 16px;
+  height: 16px;
 }
 
-/* 小屏移动端 */
-@media (max-width: 480px) {
-  .poster {
-    padding: 24px 20px;
-  }
-  
-  .main-title {
-    font-size: 28px;
-  }
-  
-  .featured-cover {
-    width: 200px;
-    height: 280px;
-  }
-  
-  .featured-info h2 {
-    font-size: 24px;
-  }
-  
-  .card-cover {
-    height: 200px;
-  }
-  
-  .card-info h4 {
-    font-size: 15px;
-  }
-  
-  .meta-info {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-  }
+.divider {
+  opacity: 0.6;
 }
 
-/* 打印优化 */
-@media print {
-  .poster {
-    box-shadow: none;
-    background: white;
-  }
-  
-  .poster::before {
-    display: none;
-  }
-  
-  .featured-anime,
-  .anime-card,
-  .empty-state {
-    box-shadow: none;
-    border: 1px solid #ddd;
-  }
-  
-  .main-title,
-  .grid-title {
-    color: black;
-    text-shadow: none;
-  }
-  
-  .poster-footer {
-    color: #666;
-  }
+.generated-time {
+  opacity: 0.75;
 }
 
-/* Weekly模板的cover-wrapper样式 */
+/* ============================================
+   Weekly模板兼容样式
+   ============================================ */
 .cover-wrapper {
   position: relative;
   width: 140px;
   height: 196px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.cover-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .cover-wrapper .cover-placeholder {
@@ -761,108 +757,4 @@ body {
   color: #718096;
   font-size: 14px;
   font-weight: 500;
-  border-radius: 10px;
-}
-
-.cover-wrapper img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* 隐藏番剧列表样式 */
-.hidden-animes {
-  margin: 24px 0 20px;
-  padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--card-border);
-  border-radius: 12px;
-  box-shadow: var(--card-shadow);
-}
-
-.hidden-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 12px;
-  text-align: center;
-}
-
-.hidden-list {
-  position: relative;
-}
-
-.hidden-text {
-  font-family: 
-    "SF Mono", "Monaco", "Inconsolata", "Roboto Mono",
-    "Source Code Pro", "Menlo", "Consolas", 
-    "Courier New", monospace;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--text-secondary);
-  background: rgba(248, 250, 252, 0.8);
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(226, 232, 240, 0.6);
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-  overflow-x: auto;
-  max-height: 120px;
-  overflow-y: auto;
-}
-
-/* 自定义滚动条 */
-.hidden-text::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.hidden-text::-webkit-scrollbar-track {
-  background: rgba(226, 232, 240, 0.3);
-  border-radius: 3px;
-}
-
-.hidden-text::-webkit-scrollbar-thumb {
-  background: rgba(160, 174, 192, 0.6);
-  border-radius: 3px;
-}
-
-.hidden-text::-webkit-scrollbar-thumb:hover {
-  background: rgba(160, 174, 192, 0.8);
-}
-
-/* 暗色主题支持 */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --card-bg: rgba(45, 45, 45, 0.95);
-    --card-border: rgba(255, 255, 255, 0.1);
-    --text-primary: #ffffff;
-    --text-secondary: #b3b3b3;
-    --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  }
-  
-  .hidden-animes {
-    background: rgba(45, 45, 45, 0.9);
-  }
-  
-  .hidden-text {
-    background: rgba(30, 30, 30, 0.8);
-    border-color: rgba(255, 255, 255, 0.1);
-    color: #d1d5db;
-  }
-  
-  .hidden-text::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-  }
-  
-  .hidden-text::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-  }
-  
-  .hidden-text::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
 }

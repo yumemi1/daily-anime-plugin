@@ -8,30 +8,76 @@
     <link rel="stylesheet" href="minimal-styles.css">
 </head>
 <body class="poster">
+    <!-- 装饰背景元素 -->
+    <div class="bg-decoration" aria-hidden="true">
+        <div class="bg-orb orb-1"></div>
+        <div class="bg-orb orb-2"></div>
+        <div class="bg-orb orb-3"></div>
+    </div>
+    
     <main class="poster-body">
         <!-- 头部装饰区域 -->
         <header class="hero-section" aria-label="页面标题">
-            <div class="date-badge">{{date}}</div>
-            <h1 class="main-title">今日新番更新</h1>
+            <div class="hero-badge">
+                <span class="date-badge">{{date}}</span>
+                <span class="update-count">{{total_count}}部更新</span>
+            </div>
+            <h1 class="main-title">
+                <span class="title-icon">✨</span>
+                今日新番更新
+                <span class="title-icon">✨</span>
+            </h1>
+            <p class="hero-subtitle">追番时刻，精彩不停</p>
         </header>
 
         <!-- 主番剧横向卡片 -->
         {{#if main_anime}}
         <article class="featured-anime" aria-labelledby="main-anime-title">
+            <div class="featured-rank">#1</div>
             <div class="featured-cover">
-                <img src="{{main_anime.cover_url}}" alt="{{main_anime.title}} 封面" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                        <div class="cover-placeholder" style="display:none;" aria-hidden="true">
-                            <span>暂无封面</span>
-                        </div>
-
+                <img src="{{main_anime.cover_url}}" alt="{{main_anime.title}} 封面" loading="eager" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                <div class="cover-placeholder" style="display:none;" aria-hidden="true">
+                    <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                    <span>暂无封面</span>
+                </div>
+                <div class="cover-overlay">
+                    <div class="play-btn" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </div>
+                </div>
             </div>
             <div class="featured-info">
-                <h2 id="main-anime-title">{{main_anime.title}}</h2>
-                <div class="meta-info">
-                    <span class="score" aria-label="评分">★ {{main_anime.score}}</span>
-                    <span class="watchers" aria-label="追番人数">{{main_anime.watchers}}</span>
+                <div class="featured-tags">
+                    <span class="tag tag-primary">主推</span>
+                    {{#if main_anime.is_new}}<span class="tag tag-new">NEW</span>{{/if}}
                 </div>
-
+                <h2 id="main-anime-title" class="featured-title">{{main_anime.title}}</h2>
+                <div class="meta-info">
+                    <div class="meta-item meta-score">
+                        <svg class="meta-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                        <span class="meta-value">{{main_anime.score}}</span>
+                    </div>
+                    <div class="meta-item meta-watchers">
+                        <svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        <span class="meta-value">{{main_anime.watchers}}</span>
+                    </div>
+                </div>
+                {{#if main_anime.summary}}
+                <p class="featured-summary">{{main_anime.summary}}</p>
+                {{/if}}
             </div>
         </article>
         {{/if}}
@@ -39,21 +85,39 @@
         <!-- 其他番剧网格布局 -->
         {{#if other_animes}}
         <section class="anime-grid" aria-labelledby="grid-title">
-            <h3 id="grid-title" class="grid-title">今日更多更新</h3>
+            <div class="section-header">
+                <h3 id="grid-title" class="grid-title">更多更新</h3>
+                <div class="section-line"></div>
+            </div>
             <div class="grid-container">
                 {{#each other_animes}}
                 <article class="anime-card">
+                    <div class="card-rank">#{{add @index 2}}</div>
                     <div class="card-cover">
-                        <img src="{{cover_url}}" alt="{{title}} 封面" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                <div class="cover-placeholder" style="display:none;" aria-hidden="true">
-                    <span>暂无封面</span>
-                </div>
-
+                        <img src="{{cover_url}}" alt="{{title}} 封面" loading="eager" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                        <div class="cover-placeholder" style="display:none;" aria-hidden="true">
+                            <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                        </div>
+                        <div class="card-overlay">
+                            <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8 5v14l11-7z"/>
+                            </svg>
+                        </div>
                     </div>
                     <div class="card-info">
-                        <h4>{{title}}</h4>
+                        <h4 class="card-title">{{title}}</h4>
                         <div class="card-meta">
-                            <span class="card-score">★ {{score}}</span>
+                            <span class="card-score">
+                                <svg class="score-icon" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                                </svg>
+                                {{score}}
+                            </span>
+                            {{#if is_new}}<span class="card-tag-new">NEW</span>{{/if}}
                         </div>
                     </div>
                 </article>
@@ -62,15 +126,21 @@
         </section>
         {{/if}}
 
-
         <!-- 未展示的番剧列表 -->
         {{#if hidden_animes}}
         <section class="hidden-animes" aria-labelledby="hidden-title">
-            <h4 id="hidden-title" class="hidden-title">
-                还有 {{hidden_count}} 部番剧更新
-            </h4>
-            <div class="hidden-list">
-                <pre class="hidden-text">{{hidden_animes}}</pre>
+            <div class="hidden-header">
+                <h4 id="hidden-title" class="hidden-title">
+                    <svg class="hidden-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    还有 {{hidden_count}} 部番剧更新
+                </h4>
+            </div>
+            <div class="hidden-content">
+                <div class="hidden-list">
+                    <pre class="hidden-text">{{hidden_animes}}</pre>
+                </div>
             </div>
         </section>
         {{/if}}
@@ -78,14 +148,38 @@
         <!-- 空状态 -->
         {{#unless has_animes}}
         <section class="empty-state" role="status" aria-label="无更新">
-            <div class="empty-icon" aria-hidden="true">📺</div>
-            <div class="empty-text">今日暂无新番更新</div>
+            <div class="empty-illustration">
+                <div class="empty-tv">
+                    <svg viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="10" y="20" width="100" height="70" rx="8" fill="#e2e8f0"/>
+                        <rect x="20" y="30" width="80" height="50" rx="4" fill="#cbd5e0"/>
+                        <rect x="45" y="90" width="30" height="8" rx="2" fill="#a0aec0"/>
+                        <circle cx="100" cy="30" r="3" fill="#f56565"/>
+                        <path d="M40 55L55 40L70 55" stroke="#a0aec0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M55 40V65" stroke="#a0aec0" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="empty-zZZ">💤</div>
+            </div>
+            <h3 class="empty-title">今日暂无新番更新</h3>
+            <p class="empty-desc">休息一天，明天继续追番~</p>
         </section>
         {{/unless}}
 
         <!-- 底部信息 -->
         <footer class="poster-footer">
-            <div class="source">Powered by <a href="https://bgm.tv" target="_blank" rel="noopener noreferrer">bgm.tv</a> | 生成于 {{generated_time}}</div>
+            <div class="footer-decoration"></div>
+            <div class="source">
+                <span class="source-text">Powered by</span>
+                <a href="https://bgm.tv" target="_blank" rel="noopener noreferrer" class="source-link">
+                    <svg class="source-icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                    </svg>
+                    bgm.tv
+                </a>
+                <span class="divider">|</span>
+                <span class="generated-time">{{generated_time}}</span>
+            </div>
         </footer>
     </main>
 </body>
