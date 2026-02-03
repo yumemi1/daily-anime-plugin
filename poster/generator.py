@@ -21,6 +21,17 @@ from .renderer import PosterRenderer
 from .cache import PosterCache
 from ..utils.blacklist_manager import get_global_blacklist_manager
 
+# 导入剧集验证器
+try:
+    from ..utils.episode_validator import validate_anime_episode, EpisodeInfo
+except ImportError:
+    try:
+        from utils.episode_validator import validate_anime_episode, EpisodeInfo
+    except ImportError:
+        validate_anime_episode = None
+        EpisodeInfo = None
+        logger.warning("无法导入剧集验证器，将使用原始API数据")
+
 logger = get_logger("poster_generator")
 
 try:
@@ -207,7 +218,9 @@ class PosterGenerator:
         today = datetime.now().weekday()  # 0=周一, 1=周二, ..., 6=周日
         today_name = datetime.now().strftime("%Y年%m月%d日")
 
-        logger.info(f"准备今日({today} = {['周一', '周二', '周三', '周四', '周五', '周六', '周日'][today]})的新番数据")
+        logger.info(
+            f"准备今日(Python weekday={today} = {['周一', '周二', '周三', '周四', '周五', '周六', '周日'][today]})的新番数据"
+        )
 
         # 找到今天的番剧
         today_animes = []
@@ -221,9 +234,11 @@ class PosterGenerator:
 
             logger.info(f"第{i}天: id={day_id}, 名称={day_name}, 番剧数={items_count}")
 
-            if day_id == today:
+            # 修复Python weekday(0-6)与Bangumi weekday(1-7)的映射
+            bangumi_weekday = today + 1
+            if day_id == bangumi_weekday:
                 today_animes = day_info.get("items", [])
-                logger.info(f"找到今日番剧: {len(today_animes)}部")
+                logger.info(f"找到今日番剧(Bangumi weekday={bangumi_weekday}): {len(today_animes)}部")
                 break
 
         if not today_animes:
@@ -265,11 +280,33 @@ class PosterGenerator:
             ]
             other_animes = await asyncio.gather(*other_animes_tasks)
 
+            # 生成未展示番剧的文字列表
+            hidden_animes_list = []
+            for anime in sorted_animes[5:]:  # 获取第6位及以后的番剧
+                title = anime.get("name_cn") or anime.get("name", "未知番剧")
+                # 添加评分和集数信息
+                rating = anime.get("rating", {}).get("score", 0)
+                rating_text = f" {rating:.1f}分" if rating > 0 else " 暂无评分"
+                eps = anime.get("eps", 0)
+                total_eps = anime.get("total_episodes", 0)
+                eps_text = f" {eps}/{total_eps}" if total_eps > 0 else f" {eps}话" if eps > 0 else ""
+                hidden_animes_list.append(f"* {title}{rating_text}{eps_text}")
+
+            hidden_animes_text = "\n".join(hidden_animes_list) if hidden_animes_list else ""
+            hidden_count = max(0, len(sorted_animes) - 5)  # 未展示的番剧数量
+        else:
+            other_animes = []
+            hidden_animes_text = ""
+            hidden_count = 0
+
         return {
             "date": today_name,
             "has_animes": True,
             "main_anime": main_anime,
             "other_animes": other_animes,
+            "hidden_animes": hidden_animes_text,
+            "hidden_count": hidden_count,
+            "total_count": len(sorted_animes),
             "generated_time": datetime.now().strftime("%Y-%m-%d %H:%M"),
         }
 
@@ -306,32 +343,167 @@ class PosterGenerator:
         other_animes_tasks = [self._format_anime_for_template(anime) for anime in top_animes[1:8]]
         other_animes = await asyncio.gather(*other_animes_tasks)
 
+        # 生成未展示番剧的文字列表
+        hidden_animes_list = []
+        for anime in top_animes[8:]:  # 获取第9位及以后的番剧
+            title = anime.get("name_cn") or anime.get("name", "未知番剧")
+            # 添加评分和集数信息
+            rating = anime.get("rating", {}).get("score", 0)
+            rating_text = f" {rating:.1f}分" if rating > 0 else " 暂无评分"
+            eps = anime.get("eps", 0)
+            total_eps = anime.get("total_episodes", 0)
+            eps_text = f" {eps}/{total_eps}" if total_eps > 0 else f" {eps}话" if eps > 0 else ""
+            hidden_animes_list.append(f"* {title}{rating_text}{eps_text}")
+
+        hidden_animes_text = "\n".join(hidden_animes_list) if hidden_animes_list else ""
+        hidden_count = max(0, len(top_animes) - 8)  # 未展示的番剧数量
+
         return {
             "date": week_name + " 汇总",
             "has_animes": True,
             "main_anime": main_anime,
             "other_animes": other_animes,
+            "hidden_animes": hidden_animes_text,
+            "hidden_count": hidden_count,
+            "total_count": len(top_animes),
             "generated_time": datetime.now().strftime("%Y-%m-%d %H:%M"),
         }
 
     async def get_episode_info(self, subject_id: int) -> Dict[str, Any]:
-        """获取剧集信息 - 优化版本"""
+        """获取剧集信息 - 集成验证器版本"""
         if BangumiAPIClient is None:
             logger.warning("BangumiAPIClient不可用，无法获取剧集信息")
             return self._get_default_episode_info()
 
-        # 优先尝试条目详情API（更稳定）
-        result = await self._get_episode_info_from_detail(subject_id)
-        if result:
-            return result
+        try:
+            # 获取基础数据
+            subject_detail = await self._get_subject_detail_data(subject_id)
+            if not subject_detail:
+                logger.warning(f"无法获取番剧 {subject_id} 的基础数据")
+                return self._get_default_episode_info()
 
-        # 降级到剧集详情API
-        result = await self._get_episode_info_from_episodes(subject_id)
-        if result:
-            return result
+            # 获取剧集列表数据（用于精确计算）
+            episodes_data = await self._get_episodes_data(subject_id)
 
-        # 最终降级
-        return self._get_default_episode_info()
+            # 使用验证器进行验证
+            if validate_anime_episode and EpisodeInfo:
+                try:
+                    episode_info = await validate_anime_episode(subject_detail, episodes_data, strict_mode=True)
+                    return self._convert_episode_info_to_dict(episode_info)
+                except Exception as e:
+                    logger.warning(f"剧集验证失败，降级到原始API数据: {e}")
+
+            # 降级到原始API处理
+            return await self._process_original_episode_data(subject_detail, episodes_data)
+
+        except Exception as e:
+            logger.error(f"获取剧集信息失败: {e}")
+            return self._get_default_episode_info()
+
+    async def _get_subject_detail_data(self, subject_id: int) -> Optional[Dict[str, Any]]:
+        """获取番剧基础数据"""
+        try:
+            async with BangumiAPIClient() as client:
+                subject_detail = await client.get_subject_detail(subject_id)
+                if subject_detail:
+                    # 标准化字段名称
+                    return {
+                        "id": subject_detail.get("id", subject_id),
+                        "name": subject_detail.get("name", ""),
+                        "name_cn": subject_detail.get("name_cn", ""),
+                        "eps": subject_detail.get("eps", 0),
+                        "eps_count": subject_detail.get("eps_count", 0),
+                        "date": subject_detail.get("date", ""),
+                        "air_date": subject_detail.get("air_date", ""),
+                        "status": subject_detail.get("status", ""),
+                        "type": subject_detail.get("type", ""),
+                        "infobox": subject_detail.get("infobox", []),
+                    }
+        except Exception as e:
+            logger.debug(f"获取番剧基础数据失败: {subject_id} -> {e}")
+
+        return None
+
+    async def _get_episodes_data(self, subject_id: int) -> Optional[List[Dict[str, Any]]]:
+        """获取剧集列表数据"""
+        try:
+            async with BangumiAPIClient() as client:
+                episodes = await client.get_subject_episodes(subject_id, episode_type=0)
+                return episodes if episodes else None
+        except Exception as e:
+            logger.debug(f"获取剧集列表失败: {subject_id} -> {e}")
+
+        return None
+
+    def _convert_episode_info_to_dict(self, episode_info) -> Dict[str, Any]:
+        """将EpisodeInfo对象转换为字典格式"""
+        if not episode_info:
+            return self._get_default_episode_info()
+
+        # 使用验证后的数据
+        eps = episode_info.eps
+        total_episodes = episode_info.eps_count
+
+        # 格式化最新集数显示
+        latest_episode = f"第{eps}话" if eps > 0 else "第1话"
+
+        # 格式化总集数显示
+        total_eps_str = str(total_episodes) if total_episodes > 0 else "?"
+
+        # 格式化进度显示
+        episode_progress = f"{eps}/{total_eps_str}" if total_episodes > 0 else f"{eps}/?"
+
+        # 判断更新状态
+        update_status = self._determine_update_status(eps, total_episodes, episode_info.air_date)
+
+        result = {
+            "latest_episode": latest_episode,
+            "total_episodes": total_eps_str,
+            "episode_progress": episode_progress,
+            "update_status": update_status,
+        }
+
+        # 添加验证信息到日志
+        if episode_info.validation_strategy:
+            logger.info(f"剧集验证完成: {episode_info.name} - 策略: {episode_info.validation_strategy.value}")
+        if episode_info.contradiction_type:
+            logger.info(
+                f"检测到矛盾: {episode_info.contradiction_type}, API: {episode_info.eps}, 计算: {episode_info.calculated_eps}"
+            )
+
+        return result
+
+    async def _process_original_episode_data(
+        self, subject_detail: Dict[str, Any], episodes_data: Optional[List[Dict[str, Any]]]
+    ) -> Dict[str, Any]:
+        """处理原始API数据（降级方案）"""
+        # 从基础数据提取信息
+        eps = subject_detail.get("eps", 0)
+        total_episodes = subject_detail.get("eps_count", 0)
+        air_date = subject_detail.get("date", "") or subject_detail.get("air_date", "")
+
+        # 如果没有总集数，尝试从infobox提取
+        if total_episodes == 0:
+            total_episodes = self._extract_episodes_from_infobox(subject_detail.get("infobox", []))
+
+        # 如果有剧集数据，尝试从中提取更准确的信息
+        if episodes_data:
+            try:
+                latest_ep = self._get_latest_episode(episodes_data)
+                total_from_eps = self._get_total_episodes(episodes_data)
+
+                # 优先使用剧集列表的数据
+                if latest_ep and latest_ep != "第1话":
+                    eps_match = "".join(filter(str.isdigit, latest_ep))
+                    if eps_match:
+                        eps = int(eps_match)
+
+                if total_from_eps != "?":
+                    total_episodes = int(total_from_eps)
+            except Exception as e:
+                logger.debug(f"处理剧集列表数据失败: {e}")
+
+        return self._format_episode_data(eps, total_episodes, air_date)
 
     async def _get_episode_info_from_detail(self, subject_id: int) -> Optional[Dict[str, Any]]:
         """从条目详情获取剧集信息"""

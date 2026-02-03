@@ -227,8 +227,9 @@ class BangumiDataFormatter:
         today_name = f"🌟 {weekday_names[today]}"
 
         # 在 calendar_data 中找到今天的数据
+        bangumi_weekday = today + 1
         for day_info in calendar_data:
-            if day_info.get("weekday", {}).get("id") == today:
+            if day_info.get("weekday", {}).get("id") == bangumi_weekday:
                 items = day_info.get("items", [])
 
                 if not items:
@@ -269,7 +270,8 @@ class BangumiDataFormatter:
             weekday_name = weekday_names[weekday] if weekday < 7 else "未知"
 
             # 标记今天
-            if weekday == today:
+            bangumi_weekday = today + 1
+            if weekday == bangumi_weekday:
                 weekday_name = f"🌟 {weekday_name} (今天)"
 
             items = day_info.get("items", [])

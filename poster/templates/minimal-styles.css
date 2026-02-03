@@ -771,6 +771,69 @@ body {
   display: block;
 }
 
+/* 隐藏番剧列表样式 */
+.hidden-animes {
+  margin: 24px 0 20px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+.hidden-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.hidden-list {
+  position: relative;
+}
+
+.hidden-text {
+  font-family: 
+    "SF Mono", "Monaco", "Inconsolata", "Roboto Mono",
+    "Source Code Pro", "Menlo", "Consolas", 
+    "Courier New", monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  background: rgba(248, 250, 252, 0.8);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-x: auto;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+/* 自定义滚动条 */
+.hidden-text::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.hidden-text::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.3);
+  border-radius: 3px;
+}
+
+.hidden-text::-webkit-scrollbar-thumb {
+  background: rgba(160, 174, 192, 0.6);
+  border-radius: 3px;
+}
+
+.hidden-text::-webkit-scrollbar-thumb:hover {
+  background: rgba(160, 174, 192, 0.8);
+}
+
 /* 暗色主题支持 */
 @media (prefers-color-scheme: dark) {
   :root {
@@ -779,5 +842,27 @@ body {
     --text-primary: #ffffff;
     --text-secondary: #b3b3b3;
     --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  
+  .hidden-animes {
+    background: rgba(45, 45, 45, 0.9);
+  }
+  
+  .hidden-text {
+    background: rgba(30, 30, 30, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #d1d5db;
+  }
+  
+  .hidden-text::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .hidden-text::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .hidden-text::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
   }
 }

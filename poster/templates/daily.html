@@ -66,6 +66,18 @@
         </section>
         {{/if}}
 
+        <!-- 未展示的番剧列表 -->
+        {{#if hidden_animes}}
+        <section class="hidden-animes" aria-labelledby="hidden-title">
+            <h4 id="hidden-title" class="hidden-title">
+                还有 {{hidden_count}} 部番剧更新
+            </h4>
+            <div class="hidden-list">
+                <pre class="hidden-text">{{hidden_animes}}</pre>
+            </div>
+        </section>
+        {{/if}}
+
         <!-- 空状态 -->
         {{#unless has_animes}}
         <section class="empty-state" role="status" aria-label="无更新">
