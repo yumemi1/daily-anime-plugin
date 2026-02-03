@@ -53,15 +53,34 @@ class PosterRenderer:
                     "--disable-gpu",
                     "--disable-web-security",
                     "--disable-features=VizDisplayCompositor",
+                    "--disable-extensions",
+                    "--disable-plugins",
+                    "--disable-images-blocked",  # 确保图片不被阻止
+                    "--disable-background-timer-throttling",
+                    "--disable-backgrounding-occluded-windows",
+                    "--disable-renderer-backgrounding",
+                    "--disable-ipc-flooding-protection",
+                    "--enable-features=NetworkService",
+                    "--disable-features=TranslateUI",
+                    "--blink-settings=imagesEnabled=true",  # 明确启用图片加载
                 ],
             )
 
             self.context = await self.browser.new_context(
                 viewport=self.viewport,
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
                 # 配置字体支持emoji和中文字符
                 locale="zh-CN",
                 timezone_id="Asia/Shanghai",
+                # 网络配置优化
+                ignore_https_errors=True,  # 忽略HTTPS错误以加载更多图片
+                extra_http_headers={
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+                    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "Cache-Control": "no-cache",
+                    "Pragma": "no-cache",
+                },
             )
 
             logger.info("Playwright浏览器初始化成功")
@@ -303,18 +322,45 @@ class PosterRenderer:
                 # 增强图片加载等待
                 await page.wait_for_load_state("domcontentloaded", timeout=30000)
 
-                # 等待所有图片加载完成
-                try:
-                    await page.wait_for_function(
-                        """() => {
-                            const images = Array.from(document.images);
-                            return images.every(img => img.complete && img.naturalHeight !== 0) ||
-                                   images.some(img => img.naturalHeight === 0); // 部分失败也继续
-                        }""",
-                        timeout=15000,
-                    )
-                except Exception as e:
-                    logger.warning(f"图片加载超时，继续渲染: {e}")
+                # 添加图片加载重试机制
+                await page.evaluate("""
+                    () => {
+                        const images = Array.from(document.images);
+                        images.forEach(img => {
+                            if (!img.complete) {
+                                img.loading = 'eager'; // 强制加载
+                                // 重新触发加载
+                                const src = img.src;
+                                img.src = '';
+                                img.src = src;
+                            }
+                        });
+                    }
+                """)
+
+                # 等待所有图片加载完成，带重试
+                max_image_retries = 2
+                for retry in range(max_image_retries):
+                    try:
+                        await page.wait_for_function(
+                            """() => {
+                                const images = Array.from(document.images);
+                                const loaded = images.filter(img => img.complete && img.naturalHeight > 0);
+                                const failed = images.filter(img => img.naturalHeight === 0);
+                                console.log(`图片状态: 已加载 ${loaded.length}/${images.length}, 失败 ${failed.length}`);
+                                return loaded.length >= Math.ceil(images.length * 0.8) || // 80%加载成功
+                                       images.length === 0; // 没有图片
+                            }""",
+                            timeout=10000,
+                        )
+                        logger.info(f"图片加载完成 (重试 {retry + 1})")
+                        break
+                    except Exception as e:
+                        if retry < max_image_retries - 1:
+                            logger.warning(f"图片加载重试 {retry + 1}/{max_image_retries}: {e}")
+                            await page.wait_for_timeout(2000)  # 等待2秒再重试
+                        else:
+                            logger.warning(f"图片加载最终超时，继续渲染: {e}")
 
                 # 检查并记录图片加载状态
                 image_status = await page.evaluate("""

@@ -5,7 +5,7 @@
 
 import os
 import asyncio
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from datetime import datetime, date
 
 try:
@@ -302,38 +302,31 @@ class PosterGenerator:
         }
 
     async def get_episode_info(self, subject_id: int) -> Dict[str, Any]:
-        """获取剧集信息"""
+        """获取剧集信息 - 优化版本"""
         if BangumiAPIClient is None:
             logger.warning("BangumiAPIClient不可用，无法获取剧集信息")
-            return {}
+            return self._get_default_episode_info()
 
-        try:
-            # 首先尝试获取详细的剧集信息
-            async with BangumiAPIClient() as client:
-                episodes = await client.get_subject_episodes(subject_id, episode_type=0)
-                if episodes:
-                    # 解析最新集数和总集数
-                    latest_episode = self._get_latest_episode(episodes)
-                    total_episodes = self._get_total_episodes(episodes)
+        # 优先尝试条目详情API（更稳定）
+        result = await self._get_episode_info_from_detail(subject_id)
+        if result:
+            return result
 
-                    return {
-                        "latest_episode": latest_episode,
-                        "total_episodes": total_episodes,
-                        "episode_progress": f"{latest_episode}/{total_episodes}",
-                        "update_status": self._get_update_status(episodes),
-                    }
-                else:
-                    logger.info(f"无法获取剧集详情，尝试使用条目详情进行降级处理")
+        # 降级到剧集详情API
+        result = await self._get_episode_info_from_episodes(subject_id)
+        if result:
+            return result
 
-        except Exception as e:
-            logger.info(f"剧集详情API调用失败，使用降级方案: {e}")
+        # 最终降级
+        return self._get_default_episode_info()
 
-        # 降级方案：从条目详情获取剧集信息
+    async def _get_episode_info_from_detail(self, subject_id: int) -> Optional[Dict[str, Any]]:
+        """从条目详情获取剧集信息"""
         try:
             async with BangumiAPIClient() as client:
                 subject_detail = await client.get_subject_detail(subject_id)
                 if subject_detail:
-                    # 从条目详情中提取剧集信息
+                    # 提取基本信息
                     eps = subject_detail.get("eps", 0)  # 已更新集数
                     total_episodes = subject_detail.get("total_episodes", 0)  # 总集数
 
@@ -341,29 +334,112 @@ class PosterGenerator:
                     if total_episodes == 0:
                         total_episodes = self._extract_episodes_from_infobox(subject_detail.get("infobox", []))
 
-                    # 格式化剧集信息
-                    latest_episode = f"第{eps}话" if eps > 0 else "第1话"
-                    total_eps_str = str(total_episodes) if total_episodes > 0 else "未知"
-                    episode_progress = f"{eps}/{total_eps_str}" if total_episodes > 0 else f"{eps}/?"
+                    # 获取播出日期用于状态判断
+                    air_date = subject_detail.get("air_date", "")
 
-                    return {
-                        "latest_episode": latest_episode,
-                        "total_episodes": total_eps_str,
-                        "episode_progress": episode_progress,
-                        "update_status": "连载中" if eps > 0 else "即将开播",
-                    }
-                else:
-                    logger.warning(f"无法获取条目详情: {subject_id}")
+                    # 格式化和验证数据
+                    result = self._format_episode_data(eps, total_episodes, air_date)
+                    logger.debug(f"从条目详情获取剧集信息成功: {subject_id} -> {result}")
+                    return result
 
         except Exception as e:
-            logger.warning(f"降级获取剧集信息失败: {e}")
+            logger.debug(f"从条目详情获取剧集信息失败: {subject_id} -> {e}")
 
-        # 最终降级：返回默认值
+        return None
+
+    async def _get_episode_info_from_episodes(self, subject_id: int) -> Optional[Dict[str, Any]]:
+        """从剧集详情获取剧集信息"""
+        try:
+            async with BangumiAPIClient() as client:
+                episodes = await client.get_subject_episodes(subject_id, episode_type=0)
+                if episodes:
+                    # 解析最新集数和总集数
+                    latest_episode = self._get_latest_episode(episodes)
+                    total_episodes = self._get_total_episodes(episodes)
+                    update_status = self._get_update_status(episodes)
+
+                    result = {
+                        "latest_episode": latest_episode,
+                        "total_episodes": total_episodes,
+                        "episode_progress": self._format_episode_progress(latest_episode, total_episodes),
+                        "update_status": update_status,
+                    }
+                    logger.debug(f"从剧集详情获取信息成功: {subject_id} -> {result}")
+                    return result
+
+        except Exception as e:
+            logger.debug(f"从剧集详情获取信息失败: {subject_id} -> {e}")
+
+        return None
+
+    def _format_episode_data(self, eps: int, total_episodes: int, air_date: str = "") -> Dict[str, Any]:
+        """格式化剧集数据"""
+        # 验证和修正数据
+        eps = max(0, int(eps)) if isinstance(eps, (int, str)) and str(eps).isdigit() else 0
+        total_episodes = (
+            max(0, int(total_episodes))
+            if isinstance(total_episodes, (int, str)) and str(total_episodes).isdigit()
+            else 0
+        )
+
+        # 格式化最新集数显示
+        latest_episode = f"第{eps}话" if eps > 0 else "第1话"
+
+        # 格式化总集数显示
+        total_eps_str = str(total_episodes) if total_episodes > 0 else "?"
+
+        # 格式化进度显示
+        episode_progress = f"{eps}/{total_eps_str}" if total_episodes > 0 else f"{eps}/?"
+
+        # 判断更新状态
+        update_status = self._determine_update_status(eps, total_episodes, air_date)
+
+        return {
+            "latest_episode": latest_episode,
+            "total_episodes": total_eps_str,
+            "episode_progress": episode_progress,
+            "update_status": update_status,
+        }
+
+    def _format_episode_progress(self, latest_episode: str, total_episodes: str) -> str:
+        """格式化剧集进度显示"""
+        try:
+            # 提取数字
+            latest_num = 1
+            if latest_episode and latest_episode.startswith("第"):
+                latest_num = int("".join(filter(str.isdigit, latest_episode))) or 1
+
+            total_num = total_episodes if total_episodes != "?" else "?"
+
+            return f"{latest_num}/{total_num}"
+        except Exception:
+            return "?/?"
+
+    def _determine_update_status(self, eps: int, total_episodes: int, air_date: str = "") -> str:
+        """判断更新状态"""
+        if eps == 0:
+            if air_date:
+                return "即将开播"
+            else:
+                return "未开播"
+        elif total_episodes > 0:
+            progress_ratio = eps / total_episodes
+            if progress_ratio >= 1.0:
+                return "已完结"
+            elif progress_ratio >= 0.8:
+                return "接近完结"
+            else:
+                return "连载中"
+        else:
+            return "连载中"
+
+    def _get_default_episode_info(self) -> Dict[str, Any]:
+        """获取默认剧集信息"""
         return {
             "latest_episode": "第1话",
             "total_episodes": "?",
             "episode_progress": "?/?",
-            "update_status": "更新中",
+            "update_status": "即将开播",
         }
 
     def _extract_episodes_from_infobox(self, infobox: List[Dict[str, Any]]) -> int:
@@ -485,62 +561,35 @@ class PosterGenerator:
         else:
             logger.debug(f"番剧 {title} 没有有效的subject_id，跳过剧集信息获取")
 
-        # 封面图片 - 添加详细调试
+        # 封面图片 - 增强的重定向处理和重试机制
         cover_url = ""
         try:
             images = anime.get("images", {})
-            logger.info(f"番剧 {title} 图片数据: {images}")
+            logger.debug(f"番剧 {title} 图片数据: {images}")
 
             if isinstance(images, dict):
                 cover_url = images.get("medium") or images.get("common") or images.get("large", "")
 
-            logger.info(f"选择的封面URL: {cover_url}")
+            logger.debug(f"选择的封面URL: {cover_url}")
 
-            # 验证URL可访问性
+            # 验证URL可访问性 - 增强版本
             if cover_url and not cover_url.startswith("https://via.placeholder"):
-                try:
-                    import aiohttp
-
-                    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as session:
-                        async with session.head(cover_url) as response:
-                            logger.info(f"图片 {cover_url} 访问状态: {response.status}")
-                            if response.status != 200:
-                                logger.warning(f"图片无法访问，状态码: {response.status}")
-                                cover_url = ""
-                except Exception as e:
-                    logger.warning(f"图片访问性检查失败 {cover_url}: {e}")
-                    cover_url = ""
+                cover_url = await self._validate_and_get_final_url(cover_url, title)
 
         except Exception as e:
             logger.warning(f"获取封面图片失败: {e}")
 
         if not cover_url:
-            logger.warning(f"使用占位图片: {title}")
+            logger.info(f"使用占位图片: {title}")
             cover_url = self.get_fallback_cover_url(title)
 
-        # 追番人数信息
-        collection = anime.get("collection", {})
-        total_watchers = collection.get("wish", 0) + collection.get("doing", 0) + collection.get("collect", 0)
-        watchers_str = f"{total_watchers}" if total_watchers > 0 else "暂无"
+        # 追番人数信息 - 增强版本
+        watchers_str = self._format_collection_count(anime)
 
-        # 播放状态颜色
-        air_status = self._get_air_status(anime, episode_info)
+        # 数据验证和清理
+        validated_data = self._validate_and_clean_data(anime, episode_info, title, score_str, watchers_str, cover_url)
 
-        # 确保所有数据都是有效的
-        latest_episode = episode_info.get("latest_episode", "第1话") if episode_info else "第1话"
-        episode_progress = episode_info.get("episode_progress", "?/?") if episode_info else "?/?"
-        update_status = episode_info.get("update_status", "更新中") if episode_info else "更新中"
-
-        return {
-            "title": title or "未知番剧",
-            "score": score_str,
-            "watchers": watchers_str,
-            "cover_url": cover_url,
-            "latest_episode": latest_episode,
-            "episode_progress": episode_progress,
-            "update_status": update_status,
-            "air_status_color": self._get_status_color(air_status),
-        }
+        return validated_data
 
     async def get_cached_poster(self, poster_type: str) -> Optional[Dict[str, Any]]:
         """获取缓存的海报"""
@@ -577,9 +626,98 @@ class PosterGenerator:
 
     def get_fallback_cover_url(self, title: str = "未知番剧") -> str:
         """生成更好的占位图片URL"""
-        # 使用更美观的占位图服务
-        encoded_title = title[:10]  # 限制长度
-        return f"https://via.placeholder.com/360x504/667eea/f5f5f5?text={encoded_title}&font-size=24"
+        import urllib.parse
+
+        # 限制长度并编码
+        display_title = title[:12] if len(title) > 12 else title
+        encoded_title = urllib.parse.quote(display_title)
+
+        # 使用多种颜色方案，基于标题哈希选择
+        title_hash = abs(hash(title)) % 5
+        color_schemes = [
+            ("667eea", "764ba2"),  # 紫色渐变
+            ("f093fb", "f5576c"),  # 粉色渐变
+            ("4facfe", "00f2fe"),  # 蓝色渐变
+            ("43e97b", "38f9d7"),  # 绿色渐变
+            ("fa709a", "fee140"),  # 橙色渐变
+        ]
+
+        bg_color, text_color = color_schemes[title_hash]
+
+        # 生成占位图URL
+        return f"https://ui-avatars.com/api/?name={encoded_title}&size=360&background={bg_color}&color={text_color}&font-size=24&length=2&rounded=false"
+
+    async def _validate_and_get_final_url(self, url: str, title: str = "未知番剧") -> str:
+        """验证图片URL并处理重定向，支持重试机制"""
+        import aiohttp
+
+        max_retries = 3
+        retry_delay = 1.0  # seconds
+
+        # 配置请求头，模拟真实浏览器
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept": "image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Referer": "https://bgm.tv/",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+        }
+
+        for attempt in range(max_retries):
+            try:
+                timeout = aiohttp.ClientTimeout(total=10)
+
+                async with aiohttp.ClientSession(timeout=timeout, headers=headers) as session:
+                    # 使用HEAD请求检查，允许重定向
+                    async with session.head(
+                        url,
+                        allow_redirects=True,
+                        ssl=False,  # 允许自签名证书
+                    ) as response:
+                        logger.info(f"[尝试 {attempt + 1}/{max_retries}] 图片 {url[:100]}... 状态: {response.status}")
+
+                        # 记录重定向信息
+                        if response.url != url:
+                            logger.info(f"重定向: {url} -> {response.url}")
+
+                        if response.status == 200:
+                            # 检查响应头是否确实是图片
+                            content_type = response.headers.get("content-type", "").lower()
+                            if content_type.startswith("image/"):
+                                final_url = str(response.url)
+                                logger.info(f"图片验证成功: {title} -> {final_url}")
+                                return final_url
+                            else:
+                                logger.warning(f"URL不是图片类型: {content_type}")
+                                return ""
+                        elif response.status in [301, 302, 303, 307, 308]:
+                            # 重定向状态，但HEAD请求可能不完整，尝试GET
+                            logger.info(f"检测到重定向状态 {response.status}，尝试GET请求验证")
+                            continue
+                        else:
+                            logger.warning(f"图片访问失败，状态码: {response.status}")
+                            return ""
+
+            except asyncio.TimeoutError:
+                logger.warning(f"[尝试 {attempt + 1}] 请求超时: {url}")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay * (attempt + 1))
+                    continue
+                return ""
+            except aiohttp.ClientError as e:
+                logger.warning(f"[尝试 {attempt + 1}] 网络错误: {type(e).__name__}: {e}")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay * (attempt + 1))
+                    continue
+                return ""
+            except Exception as e:
+                logger.error(f"[尝试 {attempt + 1}] 未知错误: {type(e).__name__}: {e}")
+                return ""
+
+        logger.warning(f"所有重试失败，无法访问图片: {url}")
+        return ""
 
     def calculate_popularity_score(self, anime: Dict[str, Any]) -> float:
         """计算番剧热度分数"""
@@ -626,15 +764,40 @@ class PosterGenerator:
         return final_score
 
     def _get_air_status(self, anime: Dict[str, Any], episode_info: Dict[str, Any]) -> str:
-        """获取播放状态"""
-        eps = anime.get("eps", 0)
-        total_eps = anime.get("total_episodes", 0)
+        """获取播放状态 - 增强版本"""
+        try:
+            # 优先使用episode_info中的状态信息
+            if episode_info and "update_status" in episode_info:
+                return episode_info["update_status"]
 
-        if eps == 0:
-            return "即将开播"
-        elif total_eps > 0 and eps >= total_eps:
-            return "已完结"
-        else:
+            # 从anime基本信息判断
+            eps = anime.get("eps", 0)
+            total_eps = anime.get("total_episodes", 0)
+            air_date = anime.get("air_date", "")
+
+            # 验证数据类型
+            eps = max(0, int(eps)) if isinstance(eps, (int, str)) and str(eps).isdigit() else 0
+            total_eps = max(0, int(total_eps)) if isinstance(total_eps, (int, str)) and str(total_eps).isdigit() else 0
+
+            # 状态判断逻辑
+            if eps == 0:
+                if air_date:
+                    return "即将开播"
+                else:
+                    return "未开播"
+            elif total_eps > 0:
+                progress_ratio = eps / total_eps
+                if progress_ratio >= 1.0:
+                    return "已完结"
+                elif progress_ratio >= 0.8:
+                    return "接近完结"
+                else:
+                    return "连载中"
+            else:
+                return "连载中"
+
+        except Exception as e:
+            logger.warning(f"状态判断失败: {e}")
             return "连载中"
 
     def _get_status_color(self, status: str) -> str:
@@ -642,9 +805,186 @@ class PosterGenerator:
         colors = {
             "即将开播": "#9f7aea",  # 紫色
             "连载中": "#48bb78",  # 绿色
+            "接近完结": "#ed8936",  # 橙色
             "已完结": "#4299e1",  # 蓝色
+            "暂停": "#f6ad55",  # 浅橙色
         }
         return colors.get(status, "#718096")
+
+    def _format_collection_count(self, anime: Dict[str, Any]) -> str:
+        """格式化追番人数统计"""
+        try:
+            collection = anime.get("collection", {})
+            if not collection:
+                return "暂无"
+
+            # 获取所有状态的计数
+            wish = collection.get("wish", 0)  # 想看
+            doing = collection.get("doing", 0)  # 在看
+            collect = collection.get("collect", 0)  # 看过
+            on_hold = collection.get("on_hold", 0)  # 搁置
+            dropped = collection.get("dropped", 0)  # 抛弃
+
+            # 验证数据完整性
+            for key, value in [
+                ("wish", wish),
+                ("doing", doing),
+                ("collect", collect),
+                ("on_hold", on_hold),
+                ("dropped", dropped),
+            ]:
+                if not isinstance(value, int) or value < 0:
+                    logger.warning(f"追番人数数据异常 {key}: {value}")
+                    return "数据异常"
+
+            # 计算活跃追番人数（想看+在看+看过）
+            active_watchers = wish + doing + collect
+            total_watchers = active_watchers + on_hold + dropped
+
+            # 格式化显示
+            if total_watchers == 0:
+                return "暂无"
+            elif total_watchers < 1000:
+                return f"{total_watchers}人追番"
+            elif total_watchers < 10000:
+                return f"{total_watchers / 1000:.1f}k人追番"
+            elif total_watchers < 100000:
+                return f"{total_watchers / 10000:.1f}万人追番"
+            else:
+                return f"{total_watchers / 100000:.1f}十万人追番"
+
+        except Exception as e:
+            logger.warning(f"追番人数格式化失败: {e}")
+            return "数据异常"
+
+    def _validate_and_clean_data(
+        self,
+        anime: Dict[str, Any],
+        episode_info: Dict[str, Any],
+        title: str,
+        score_str: str,
+        watchers_str: str,
+        cover_url: str,
+    ) -> Dict[str, Any]:
+        """验证和清理数据，确保所有字段完整性"""
+        try:
+            # 播放状态判断
+            air_status = self._get_air_status(anime, episode_info)
+
+            # 从episode_info提取数据，有默认值
+            latest_episode = "第1话"
+            episode_progress = "?/?"
+            update_status = "连载中"
+
+            if episode_info:
+                latest_episode = self._validate_text_field(episode_info.get("latest_episode"), "第1话")
+                episode_progress = self._validate_text_field(episode_info.get("episode_progress"), "?/?")
+                update_status = self._validate_text_field(episode_info.get("update_status"), "连载中")
+
+            # 构建最终数据
+            result = {
+                "title": self._validate_text_field(title, "未知番剧"),
+                "score": self._validate_score_field(score_str),
+                "watchers": self._validate_text_field(watchers_str, "暂无"),
+                "cover_url": self._validate_url_field(cover_url),
+                "latest_episode": latest_episode,
+                "episode_progress": episode_progress,
+                "update_status": update_status,
+                "air_status_color": self._get_status_color(air_status),
+            }
+
+            # 最终验证
+            self._final_data_validation(result, anime.get("id", "unknown"))
+
+            return result
+
+        except Exception as e:
+            logger.error(f"数据验证失败: {e}")
+            # 返回安全的默认数据
+            return self._get_safe_default_data(title)
+
+    def _validate_text_field(self, value: Any, default: str) -> str:
+        """验证文本字段"""
+        if value is None:
+            return default
+        if not isinstance(value, str):
+            value = str(value)
+        return value.strip() or default
+
+    def _validate_score_field(self, score_str: str) -> str:
+        """验证评分字段"""
+        if not score_str:
+            return "暂无"
+
+        # 确保评分格式正确
+        if score_str == "暂无":
+            return score_str
+
+        try:
+            # 尝试解析为浮点数并重新格式化
+            score = float(score_str)
+            if score < 0:
+                return "0.0"
+            elif score > 10:
+                return "10.0"
+            else:
+                return f"{score:.1f}"
+        except (ValueError, TypeError):
+            return "暂无"
+
+    def _validate_url_field(self, url: str) -> str:
+        """验证URL字段"""
+        if not url:
+            return ""
+
+        if not isinstance(url, str):
+            return ""
+
+        url = url.strip()
+
+        # 检查URL格式
+        if not (url.startswith("http://") or url.startswith("https://")):
+            return ""
+
+        # 检查长度限制
+        if len(url) > 1000:  # 防止过长URL
+            return ""
+
+        return url
+
+    def _final_data_validation(self, data: Dict[str, Any], anime_id: Any) -> None:
+        """最终数据验证"""
+        required_fields = ["title", "score", "watchers", "latest_episode", "episode_progress", "update_status"]
+
+        for field in required_fields:
+            if field not in data or not data[field]:
+                logger.warning(f"数据验证失败 - 缺失字段 {field}: anime_id={anime_id}")
+                data[field] = self._get_field_default(field)
+
+    def _get_field_default(self, field: str) -> str:
+        """获取字段默认值"""
+        defaults = {
+            "title": "未知番剧",
+            "score": "暂无",
+            "watchers": "暂无",
+            "latest_episode": "第1话",
+            "episode_progress": "?/?",
+            "update_status": "连载中",
+        }
+        return defaults.get(field, "")
+
+    def _get_safe_default_data(self, title: str = "未知番剧") -> Dict[str, Any]:
+        """获取安全的默认数据"""
+        return {
+            "title": title or "未知番剧",
+            "score": "暂无",
+            "watchers": "暂无",
+            "cover_url": "",
+            "latest_episode": "第1话",
+            "episode_progress": "?/?",
+            "update_status": "连载中",
+            "air_status_color": self._get_status_color("连载中"),
+        }
 
 
 # 全局生成器实例
