@@ -284,13 +284,10 @@ class PosterGenerator:
             hidden_animes_list = []
             for anime in sorted_animes[5:]:  # 获取第6位及以后的番剧
                 title = anime.get("name_cn") or anime.get("name", "未知番剧")
-                # 添加评分和集数信息
+                # 只添加评分信息，不显示集数
                 rating = anime.get("rating", {}).get("score", 0)
                 rating_text = f" {rating:.1f}分" if rating > 0 else " 暂无评分"
-                eps = anime.get("eps", 0)
-                total_eps = anime.get("total_episodes", 0)
-                eps_text = f" {eps}/{total_eps}" if total_eps > 0 else f" {eps}话" if eps > 0 else ""
-                hidden_animes_list.append(f"* {title}{rating_text}{eps_text}")
+                hidden_animes_list.append(f"* {title}{rating_text}")
 
             hidden_animes_text = "\n".join(hidden_animes_list) if hidden_animes_list else ""
             hidden_count = max(0, len(sorted_animes) - 5)  # 未展示的番剧数量
@@ -347,13 +344,10 @@ class PosterGenerator:
         hidden_animes_list = []
         for anime in top_animes[8:]:  # 获取第9位及以后的番剧
             title = anime.get("name_cn") or anime.get("name", "未知番剧")
-            # 添加评分和集数信息
+            # 只添加评分信息，不显示集数
             rating = anime.get("rating", {}).get("score", 0)
             rating_text = f" {rating:.1f}分" if rating > 0 else " 暂无评分"
-            eps = anime.get("eps", 0)
-            total_eps = anime.get("total_episodes", 0)
-            eps_text = f" {eps}/{total_eps}" if total_eps > 0 else f" {eps}话" if eps > 0 else ""
-            hidden_animes_list.append(f"* {title}{rating_text}{eps_text}")
+            hidden_animes_list.append(f"* {title}{rating_text}")
 
         hidden_animes_text = "\n".join(hidden_animes_list) if hidden_animes_list else ""
         hidden_count = max(0, len(top_animes) - 8)  # 未展示的番剧数量
