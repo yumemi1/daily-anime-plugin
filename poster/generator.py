@@ -6,7 +6,7 @@
 import os
 import asyncio
 from typing import Dict, Any, Optional, List, Union
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 try:
     from src.common.logger import get_logger
@@ -299,34 +299,100 @@ class PosterGenerator:
 
     async def _prepare_weekly_data(self, calendar_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """准备周报海报数据"""
-        week_start = datetime.now()
-        # 获取本周的日期范围
+        today = datetime.now()
+
+        # 计算本周的开始和结束日期
+        days_since_monday = today.weekday()  # 0=周一, 6=周日
+        week_start = today - timedelta(days=days_since_monday)
+        week_end = week_start + timedelta(days=6)
+
         week_name = f"{week_start.strftime('%Y年第%W周')}"
+        week_start_str = week_start.strftime("%m月%d日")
+        week_end_str = week_end.strftime("%m月%d日")
 
-        # 收集本周所有番剧
+        # 收集每日数据和所有番剧
+        daily_summary = []
         all_animes = []
-        for day_info in calendar_data:
-            items = day_info.get("items", [])
-            all_animes.extend(items)
+        highlights = []
 
-        # 应用过滤规则
+        # 一周7天的中文名称
+        week_days = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+
+        for i, day_info in enumerate(calendar_data):
+            if i >= 7:  # 只处理一周7天的数据
+                break
+
+            weekday_info = day_info.get("weekday", {})
+            day_id = weekday_info.get("id", 0)
+
+            # 获取当天的番剧
+            items = day_info.get("items", [])
+            filtered_items = self.filter_anime_list(items)
+
+            # 每日汇总数据
+            day_name = week_days[i] if i < 7 else f"第{i + 1}天"
+            main_anime = ""
+            if filtered_items:
+                # 取当天评分最高的番剧作为主推
+                best_anime = max(filtered_items, key=lambda x: x.get("rating", {}).get("score", 0))
+                main_anime = best_anime.get("name_cn") or best_anime.get("name", "未知番剧")
+
+            daily_summary.append({"day": day_name, "count": len(filtered_items), "main": main_anime})
+
+            # 收集所有番剧
+            all_animes.extend(filtered_items)
+
+            # 收集亮点（高评分番剧）
+            for anime in filtered_items:
+                rating = anime.get("rating", {}).get("score", 0)
+                if rating >= 8.0:  # 评分8分以上
+                    title = anime.get("name_cn") or anime.get("name", "未知番剧")
+                    highlights.append(f"{title} ({rating:.1f}分)")
+
+        # 应用过滤规则到所有番剧
         filtered_animes = self.filter_anime_list(all_animes)
 
-        # 按热度排序，取前8个
-        sorted_animes = sorted(filtered_animes, key=self.calculate_popularity_score, reverse=True)
+        # 去重并按热度排序，取前8个
+        seen_ids = set()
+        unique_animes = []
+        for anime in filtered_animes:
+            anime_id = anime.get("id")
+            if anime_id and anime_id not in seen_ids:
+                unique_animes.append(anime)
+                seen_ids.add(anime_id)
+
+        sorted_animes = sorted(unique_animes, key=self.calculate_popularity_score, reverse=True)
         top_animes = sorted_animes[:8]
+
+        # 生成更多亮点（热门番剧）
+        if not highlights and top_animes:
+            for anime in top_animes[:3]:
+                rating = anime.get("rating", {}).get("score", 0)
+                title = anime.get("name_cn") or anime.get("name", "未知番剧")
+                if rating > 0:
+                    highlights.append(f"{title} ({rating:.1f}分)")
+                else:
+                    highlights.append(title)
 
         if not top_animes:
             return {
+                "week_start": week_start_str,
+                "week_end": week_end_str,
+                "anime_count": 0,
                 "date": week_name,
                 "has_animes": False,
                 "main_anime": None,
                 "other_animes": [],
+                "daily_summary": daily_summary,
+                "highlights": highlights,
                 "generated_time": datetime.now().strftime("%Y-%m-%d %H:%M"),
             }
 
         # 格式化数据
         main_anime = await self._format_anime_for_template(top_animes[0])
+        # 为每周海报添加时间字段
+        main_anime["time"] = "本周更新"  # 简化的时间显示
+
         other_animes_tasks = [self._format_anime_for_template(anime) for anime in top_animes[1:8]]
         other_animes = await asyncio.gather(*other_animes_tasks)
 
@@ -334,7 +400,6 @@ class PosterGenerator:
         hidden_animes_list = []
         for anime in top_animes[8:]:  # 获取第9位及以后的番剧
             title = anime.get("name_cn") or anime.get("name", "未知番剧")
-            # 只添加评分信息，不显示集数
             rating = anime.get("rating", {}).get("score", 0)
             rating_text = f" {rating:.1f}分" if rating > 0 else " 暂无评分"
             hidden_animes_list.append(f"* {title}{rating_text}")
@@ -343,6 +408,9 @@ class PosterGenerator:
         hidden_count = max(0, len(top_animes) - 8)  # 未展示的番剧数量
 
         return {
+            "week_start": week_start_str,
+            "week_end": week_end_str,
+            "anime_count": len(filtered_animes),
             "date": week_name + " 汇总",
             "has_animes": True,
             "main_anime": main_anime,
@@ -350,6 +418,8 @@ class PosterGenerator:
             "hidden_animes": hidden_animes_text,
             "hidden_count": hidden_count,
             "total_count": len(top_animes),
+            "daily_summary": daily_summary,
+            "highlights": highlights[:5],  # 最多显示5个亮点
             "generated_time": datetime.now().strftime("%Y-%m-%d %H:%M"),
         }
 
