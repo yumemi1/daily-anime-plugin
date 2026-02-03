@@ -142,10 +142,7 @@ body {
   box-shadow: var(--glass-shadow);
 }
 
-.date-badge::before {
-  content: '📅';
-  font-size: 14px;
-}
+
 
 .update-count {
   display: inline-flex;
