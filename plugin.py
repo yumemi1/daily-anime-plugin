@@ -384,7 +384,7 @@ class AnimeWeekCommand(BaseCommand):
             formatted_info = BangumiDataFormatter.format_calendar_info(calendar_data)
 
             # 添加本周汇总标题
-            week_info = f"📺 本周新番汇总\n{formatted_info}"
+            week_info = f"本周新番汇总\n{formatted_info}"
 
             # 发送消息
             await self.send_text(week_info)
@@ -493,9 +493,9 @@ class AnimePosterCommand(BaseCommand):
                 logger.warning("海报生成失败，降级到文本版本")
                 info = await get_today_anime_info()
                 fallback_msg = (
-                    "⚠️ 海报生成失败，为您显示文本版本\n\n"
-                    f"📺 今日新番信息\n{info}\n\n"
-                    "💡 提示：如果海报持续失败，请检查Playwright依赖是否正确安装"
+                    "海报生成失败，为您显示文本版本\n\n"
+                    f"今日新番信息\n{info}\n\n"
+                    "提示：如果海报持续失败，请检查Playwright依赖是否正确安装"
                 )
                 await self.send_text(fallback_msg)
                 return False, "海报生成失败，已降级到文本版本", False
@@ -564,14 +564,14 @@ class WeeklyPosterCommand(BaseCommand):
                 calendar_data = await cached_get_calendar()
                 if calendar_data:
                     formatted_info = BangumiDataFormatter.format_calendar_info(calendar_data)
-                    week_info = f"📺 本周新番汇总\n{formatted_info}"
+                    week_info = f"本周新番汇总\n{formatted_info}"
                 else:
                     week_info = "获取本周新番信息失败，请稍后重试"
 
                 fallback_msg = (
-                    "⚠️ 周报海报生成失败，为您显示文本版本\n\n"
+                    "周报海报生成失败，为您显示文本版本\n\n"
                     f"{week_info}\n\n"
-                    "💡 提示：如果海报持续失败，请检查Playwright依赖是否正确安装"
+                    "提示：如果海报持续失败，请检查Playwright依赖是否正确安装"
                 )
                 await self.send_text(fallback_msg)
                 return False, "周报海报生成失败，已降级到文本版本", False
@@ -621,7 +621,7 @@ class DailyPushEventHandler(BaseEventHandler):
                     info = await get_today_anime_info()
 
                     # 添加推送标题
-                    push_message = f"🎌 每日新番推送 {push_time}\n\n{info}"
+                    push_message = f"每日新番推送 {push_time}\n\n{info}"
 
                     # 尝试生成海报
                     poster_image = None
