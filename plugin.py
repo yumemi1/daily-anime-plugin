@@ -481,7 +481,7 @@ class AnimePosterCommand(BaseCommand):
                     return False, "海报数据为空", False
 
                 # 构建图片标题
-                title = f"🎌 今日新番海报 - {poster_result.get('date', datetime.now().strftime('%Y年%m月%d日'))}"
+                title = f"今日新番海报 - {poster_result.get('date', datetime.now().strftime('%Y年%m月%d日'))}"
 
                 # 先发送标题文本，再发送图片
                 await self.send_text(title)

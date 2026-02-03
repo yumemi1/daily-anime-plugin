@@ -1012,29 +1012,12 @@ class PosterGenerator:
     ) -> Dict[str, Any]:
         """验证和清理数据，确保所有字段完整性"""
         try:
-            # 播放状态判断
-            air_status = self._get_air_status(anime, episode_info)
-
-            # 从episode_info提取数据，有默认值
-            latest_episode = "第1话"
-            episode_progress = "?/?"
-            update_status = "连载中"
-
-            if episode_info:
-                latest_episode = self._validate_text_field(episode_info.get("latest_episode"), "第1话")
-                episode_progress = self._validate_text_field(episode_info.get("episode_progress"), "?/?")
-                update_status = self._validate_text_field(episode_info.get("update_status"), "连载中")
-
             # 构建最终数据
             result = {
                 "title": self._validate_text_field(title, "未知番剧"),
                 "score": self._validate_score_field(score_str),
                 "watchers": self._validate_text_field(watchers_str, "暂无"),
                 "cover_url": self._validate_url_field(cover_url),
-                "latest_episode": latest_episode,
-                "episode_progress": episode_progress,
-                "update_status": update_status,
-                "air_status_color": self._get_status_color(air_status),
             }
 
             # 最终验证
@@ -1098,7 +1081,7 @@ class PosterGenerator:
 
     def _final_data_validation(self, data: Dict[str, Any], anime_id: Any) -> None:
         """最终数据验证"""
-        required_fields = ["title", "score", "watchers", "latest_episode", "episode_progress", "update_status"]
+        required_fields = ["title", "score", "watchers"]
 
         for field in required_fields:
             if field not in data or not data[field]:
@@ -1111,9 +1094,6 @@ class PosterGenerator:
             "title": "未知番剧",
             "score": "暂无",
             "watchers": "暂无",
-            "latest_episode": "第1话",
-            "episode_progress": "?/?",
-            "update_status": "连载中",
         }
         return defaults.get(field, "")
 
@@ -1124,10 +1104,6 @@ class PosterGenerator:
             "score": "暂无",
             "watchers": "暂无",
             "cover_url": "",
-            "latest_episode": "第1话",
-            "episode_progress": "?/?",
-            "update_status": "连载中",
-            "air_status_color": self._get_status_color("连载中"),
         }
 
 
