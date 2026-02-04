@@ -358,7 +358,15 @@ class PosterGenerator:
                 rating = anime.get("rating", {}).get("score", 0)
                 if rating >= 8.0:  # 评分8分以上
                     title = anime.get("name_cn") or anime.get("name", "未知番剧")
-                    highlights.append(f"{title} ({rating:.1f}分)")
+                    cover_url = self._get_anime_cover_url(anime)
+                    highlights.append(
+                        {
+                            "title": title,
+                            "rating": rating,
+                            "cover_url": cover_url,
+                            "display_text": f"{title} ({rating:.1f}分)",
+                        }
+                    )
 
         # 应用过滤规则到所有番剧
         filtered_animes = self.filter_anime_list(all_animes)
@@ -380,10 +388,19 @@ class PosterGenerator:
             for anime in top_animes[:3]:
                 rating = anime.get("rating", {}).get("score", 0)
                 title = anime.get("name_cn") or anime.get("name", "未知番剧")
+                cover_url = self._get_anime_cover_url(anime)
+
                 if rating > 0:
-                    highlights.append(f"{title} ({rating:.1f}分)")
+                    highlights.append(
+                        {
+                            "title": title,
+                            "rating": rating,
+                            "cover_url": cover_url,
+                            "display_text": f"{title} ({rating:.1f}分)",
+                        }
+                    )
                 else:
-                    highlights.append(title)
+                    highlights.append({"title": title, "rating": 0, "cover_url": cover_url, "display_text": title})
 
         if not top_animes:
             return {
@@ -656,6 +673,18 @@ class PosterGenerator:
                 return "连载中"
         else:
             return "连载中"
+
+    def _get_anime_cover_url(self, anime: Dict[str, Any]) -> str:
+        """获取番剧封面URL"""
+        try:
+            images = anime.get("images", {})
+            if isinstance(images, dict):
+                # 优先使用中等质量的图片
+                cover_url = images.get("medium") or images.get("large") or images.get("common", "")
+                return cover_url
+        except Exception as e:
+            logger.debug(f"获取封面URL失败: {e}")
+        return ""
 
     def _get_default_episode_info(self) -> Dict[str, Any]:
         """获取默认剧集信息"""
