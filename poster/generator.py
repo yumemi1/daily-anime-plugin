@@ -358,7 +358,7 @@ class PosterGenerator:
                 rating = anime.get("rating", {}).get("score", 0)
                 if rating >= 8.0:  # 评分8分以上
                     title = anime.get("name_cn") or anime.get("name", "未知番剧")
-                    cover_url = self._get_anime_cover_url(anime)
+                    cover_url = await self._get_anime_cover_url(anime)
                     highlights.append(
                         {
                             "title": title,
@@ -388,7 +388,7 @@ class PosterGenerator:
             for anime in top_animes[:3]:
                 rating = anime.get("rating", {}).get("score", 0)
                 title = anime.get("name_cn") or anime.get("name", "未知番剧")
-                cover_url = self._get_anime_cover_url(anime)
+                cover_url = await self._get_anime_cover_url(anime)
 
                 if rating > 0:
                     highlights.append(
@@ -674,17 +674,38 @@ class PosterGenerator:
         else:
             return "连载中"
 
-    def _get_anime_cover_url(self, anime: Dict[str, Any]) -> str:
+    async def _get_anime_cover_url(self, anime: Dict[str, Any]) -> str:
         """获取番剧封面URL"""
+        title = anime.get("name_cn") or anime.get("name", "未知番剧")
+
         try:
             images = anime.get("images", {})
+            logger.debug(f"番剧 {title} 图片数据: {images}")
+
             if isinstance(images, dict):
                 # 优先使用中等质量的图片
                 cover_url = images.get("medium") or images.get("large") or images.get("common", "")
+                logger.debug(f"番剧 {title} 初始封面URL: {cover_url}")
+
+                # 验证URL可访问性
+                if cover_url and not cover_url.startswith("https://via.placeholder"):
+                    validated_url = await self._validate_and_get_final_url(cover_url, title)
+                    logger.debug(f"番剧 {title} 验证后URL: {validated_url}")
+                    cover_url = validated_url
+
+                if not cover_url:
+                    # 生成占位图片
+                    cover_url = self.get_fallback_cover_url(title)
+                    logger.debug(f"番剧 {title} 使用占位图片: {cover_url}")
+
                 return cover_url
         except Exception as e:
-            logger.debug(f"获取封面URL失败: {e}")
-        return ""
+            logger.warning(f"获取封面URL失败: {title} -> {e}")
+
+        # 生成默认占位图片
+        cover_url = self.get_fallback_cover_url(title)
+        logger.debug(f"番剧 {title} 使用默认占位图片: {cover_url}")
+        return cover_url
 
     def _get_default_episode_info(self) -> Dict[str, Any]:
         """获取默认剧集信息"""
