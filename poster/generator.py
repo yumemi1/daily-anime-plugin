@@ -965,34 +965,43 @@ class PosterGenerator:
                                 logger.info(f"图片验证成功: {title} -> {final_url}")
                                 return final_url
                             else:
-                                logger.warning(f"URL不是图片类型: {content_type}")
-                                return ""
+                                logger.warning(f"URL不是图片类型: {content_type}，返回原始URL")
+                                return url
                         elif response.status in [301, 302, 303, 307, 308]:
                             # 重定向状态，但HEAD请求可能不完整，尝试GET
-                            logger.info(f"检测到重定向状态 {response.status}，尝试GET请求验证")
-                            continue
+                            logger.info(f"检测到重定向状态 {response.status}，返回重定向后URL")
+                            return str(response.url)
+                        elif response.status in [403, 404]:
+                            # 权限或不存在错误，返回原始URL让浏览器尝试
+                            logger.warning(f"图片访问受限 ({response.status})，返回原始URL: {url}")
+                            return url
                         else:
-                            logger.warning(f"图片访问失败，状态码: {response.status}")
-                            return ""
+                            logger.warning(f"图片访问状态码: {response.status}，返回原始URL")
+                            return url
 
             except asyncio.TimeoutError:
                 logger.warning(f"[尝试 {attempt + 1}] 请求超时: {url}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(retry_delay * (attempt + 1))
                     continue
-                return ""
+                # 超时也返回原始URL
+                logger.warning(f"验证超时，返回原始URL: {url}")
+                return url
             except aiohttp.ClientError as e:
                 logger.warning(f"[尝试 {attempt + 1}] 网络错误: {type(e).__name__}: {e}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(retry_delay * (attempt + 1))
                     continue
-                return ""
+                # 网络错误返回原始URL
+                logger.warning(f"网络错误，返回原始URL: {url}")
+                return url
             except Exception as e:
                 logger.error(f"[尝试 {attempt + 1}] 未知错误: {type(e).__name__}: {e}")
-                return ""
+                # 未知错误返回原始URL
+                return url
 
-        logger.warning(f"所有重试失败，无法访问图片: {url}")
-        return ""
+        logger.warning(f"所有重试完成，返回原始URL: {url}")
+        return url
 
     def calculate_popularity_score(self, anime: Dict[str, Any]) -> float:
         """计算番剧热度分数"""

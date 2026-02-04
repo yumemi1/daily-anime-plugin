@@ -212,12 +212,12 @@ body {
    每日模板 - 主推番剧卡片
    ============================================ */
 .featured-anime {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(240, 147, 251, 0.08) 100%);
-  border: 1px solid rgba(102, 126, 234, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.8);
   border-radius: 28px;
   box-shadow: 
-    0 20px 60px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+    0 24px 80px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
   padding: 32px;
   display: flex;
   gap: 32px;
@@ -225,14 +225,30 @@ body {
   overflow: hidden;
 }
 
+/* 左上角装饰 */
 .featured-anime::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
+  width: 120px;
+  height: 120px;
+  background: linear-gradient(135deg, rgba(246, 211, 101, 0.3) 0%, transparent 60%);
+  border-radius: 28px 0 0 0;
+  pointer-events: none;
+}
+
+/* 右下角装饰 */
+.featured-anime::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
   right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea 0%, #f093fb 100%);
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(315deg, rgba(102, 126, 234, 0.15) 0%, transparent 60%);
+  border-radius: 0 0 28px 0;
+  pointer-events: none;
 }
 
 .featured-cover {
@@ -487,12 +503,12 @@ body {
 }
 
 .weekly-featured {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(240, 147, 251, 0.08) 100%);
-  border: 1px solid rgba(102, 126, 234, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.8);
   border-radius: 28px;
   box-shadow: 
-    0 20px 60px rgba(0, 0, 0, 0.12),
-    0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+    0 24px 80px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
   padding: 32px;
   display: flex;
   gap: 32px;
@@ -500,14 +516,30 @@ body {
   overflow: hidden;
 }
 
+/* 左上角金色装饰 */
 .weekly-featured::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
+  width: 120px;
+  height: 120px;
+  background: linear-gradient(135deg, rgba(246, 211, 101, 0.3) 0%, transparent 60%);
+  border-radius: 28px 0 0 0;
+  pointer-events: none;
+}
+
+/* 右下角紫蓝装饰 */
+.weekly-featured::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
   right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea 0%, #f093fb 100%);
+  width: 200px;
+  height: 200px;
+  background: linear-gradient(315deg, rgba(102, 126, 234, 0.15) 0%, transparent 60%);
+  border-radius: 0 0 28px 0;
+  pointer-events: none;
 }
 
 .weekly-featured .cover-wrapper {
